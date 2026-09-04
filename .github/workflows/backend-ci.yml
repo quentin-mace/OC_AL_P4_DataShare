@@ -1,0 +1,42 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'DataShare_API/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'DataShare_API/**'
+      - '.github/workflows/backend-ci.yml'
+
+defaults:
+  run:
+    working-directory: DataShare_API
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build PHP image
+        run: docker compose build php
+
+      - name: Install dependencies
+        run: docker compose run --rm php composer install --no-interaction --prefer-dist
+
+      - name: Coding standards (PHP-CS-Fixer)
+        run: docker compose run --rm php composer lint:cs
+
+      - name: Static analysis (PHPStan)
+        run: docker compose run --rm php composer lint:phpstan
+
+      - name: Tests (PHPUnit + PCOV)
+        run: docker compose run --rm -e APP_ENV=test php vendor/bin/phpunit --coverage-text
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
