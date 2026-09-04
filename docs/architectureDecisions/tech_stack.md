@@ -21,13 +21,14 @@ Le critère retenu est donc **la maîtrise préalable du stack**, pas l'intérê
 
 React n'impose rien, donc le stack front est défini par ce qui l'entoure. Ces choix sont arrêtés ici pour ne pas se décider au fil du développement.
 
-| Besoin | Choix |
-|---|---|
-| Routage | react-router |
-| Appels HTTP | axios, pour les intercepteurs JWT et le suivi de progression d'upload |
+| Besoin | Choix                                                                                                            |
+|---|------------------------------------------------------------------------------------------------------------------|
+| Routage | react-router                                                                                                     |
+| Appels HTTP | axios, pour les intercepteurs JWT et le suivi de progression d'upload                                            |
 | Formulaires et validation client | react-hook-form + zod, les règles des specs deviennent déclaratives et testables |
-| Styles | Tailwind CSS, les maquettes existent en desktop et mobile, le responsive tient dans un préfixe de classe |
-| État serveur | aucune bibliothèque, un seul écran concerné, TanStack Query serait surdimensionné |
+| Styles | Tailwind CSS, les maquettes existent en desktop et mobile, le responsive tient dans un préfixe de classe         |
+| État serveur | aucune bibliothèque, un seul écran concerné, TanStack Query serait surdimensionné                                |
+| État global (client) | zustand, pour partager l'état d'authentification (utilisateur, token) entre les pages sans prop drilling ni Context API verbeux |
 
 ## Transit des fichiers
 
@@ -41,7 +42,7 @@ Effet de bord utile : l'endpoint d'upload reste un sujet de mesure réel pour le
 ## Autres décisions
 
 - **Format de réponse de l'API** : JSON simple, et non le JSON-LD par défaut d'API Platform. Le front est écrit à la main et n'exploiterait pas les métadonnées de description. Conséquence connue, une collection est un simple tableau, sans enveloppe de pagination. Sans impact, le MVP n'impose ni tri ni pagination.
-- **Outillage de tests** : PHPUnit + PCOV, Vitest + React Testing Library, Cypress, k6.
+- **Outillage de tests** : PHPUnit + PCOV, Vitest + React Testing Library, Cypress, k6 (plutot gatling ou octoperf).
 
 ## Points de vigilance
 
@@ -50,7 +51,4 @@ Effet de bord utile : l'endpoint d'upload reste un sujet de mesure réel pour le
 - **Opérations hors CRUD API Platform.** L'upload multipart et l'émission d'URL présignée demandent des opérations personnalisées et une documentation OpenAPI manuelle.
 - **Deux rapports de couverture** à présenter, back et front, pour justifier le seuil de 70 %.
 - **Accessibilité.** React ne fournit aucun garde-fou, les libellés, le focus et les rôles ARIA sont à la charge du développement.
-
-## À valider avec le mentor
-
-Les specs écrivent littéralement "Stockage AWS S3". La lecture retenue est que le choix porte sur l'API S3, MinIO n'en étant qu'une implémentation, ce qui satisfait la contrainte tout en restant gratuit et auto-hébergeable. À confirmer.
+La lecture retenue est que le choix porte sur l'API S3, MinIO n'en étant qu'une implémentation, ce qui satisfait la contrainte tout en restant gratuit et auto-hébergeable. À confirmer.

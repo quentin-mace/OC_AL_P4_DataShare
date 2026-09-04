@@ -18,9 +18,18 @@ Le token JWT est ensuite transmis dans l'en-tête `Authorization: Bearer <token>
 | POST | /api/files | US01, US07, US09 | optionnelle (connecté ou anonyme) | multipart/form-data : `file`, `expiresInDays?` (1 à 7, défaut 7), `password?` (min 6 car.), `tags?` (string[]) | 201 `{ id, name, size, mimeType, downloadToken, expiresAt, hasPassword, tags }` |
 | GET | /api/files | US05 | requise | query `tag?` (filtrage facultatif) | 200 `[{ id, name, size, sentAt, expiresAt, status, tags }]` |
 | DELETE | /api/files/{id} | US06 | requise, propriétaire uniquement | aucun | 204 |
-| PATCH | /api/files/{id}/tags | US08 | requise, propriétaire uniquement | `{ tags: string[] }` (remplace la liste) | 200 `{ id, tags }` |
 
 `downloadToken` est l'identifiant non prédictible utilisé dans le lien de téléchargement partagé.
+
+## Tags
+
+| Méthode | Route | US | Auth | Corps de la requête | Réponse |
+|---|---|---|---|---|---|
+| POST | /api/files/{id}/tags | US08 | requise, propriétaire uniquement | `{ tag }` (texte libre, max 30 car., pas de doublon sur le fichier) | 201 `{ id, tags }` |
+| PUT | /api/files/{id}/tags/{tag} | US08 | requise, propriétaire uniquement | `{ tag }` (nouveau nom, mêmes règles que la création) | 200 `{ id, tags }` |
+| DELETE | /api/files/{id}/tags/{tag} | US08 | requise, propriétaire uniquement | aucun | 200 `{ id, tags }` |
+
+La modification (renommage) d'un tag existant n'est pas décrite littéralement dans US08 (specs/spécifications.pdf) ; c'est une extension ajoutée à la demande du produit.
 
 ## Téléchargement (lien public)
 
