@@ -1,0 +1,16 @@
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+
+parameters:
+    level: max
+    paths:
+        - src
+    tmpDir: var/cache/phpstan
+    ignoreErrors:
+        -
+            # Faux positif : appelee via $this->getAllowedEnvs() depuis Symfony\Component\DependencyInjection\Kernel\KernelTrait,
+            # que la classe App\Kernel surcharge (methode privee de meme nom). PHPStan ne suit pas ce mecanisme de trait.
+            message: '#^Method App\\Kernel::getAllowedEnvs\(\) is unused\.$#'
+            identifier: method.unused
+            path: src/Kernel.php
