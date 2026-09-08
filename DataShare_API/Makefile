@@ -1,4 +1,4 @@
-.PHONY: init env install keys up down test lint lint-fix
+.PHONY: init env install keys up down test lint lint-fix cs-fixer
 
 init: env install keys ## Premiere installation
 
@@ -26,3 +26,6 @@ lint: ## Verifie le style (CS-Fixer) et l'analyse statique (PHPStan)
 
 lint-fix: ## Corrige automatiquement le style de code
 	docker compose run --rm php composer lint:cs:fix
+
+cs-fixer: ## Lance CS-Fixer seul (make cs-fixer ARGS="--dry-run --diff")
+	docker compose run --rm php vendor/bin/php-cs-fixer fix $(ARGS)
