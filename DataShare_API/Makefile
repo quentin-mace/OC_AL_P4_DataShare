@@ -1,4 +1,4 @@
-.PHONY: init env install keys up down test lint lint-fix cs-fixer
+.PHONY: init env install keys up down test lint lint-fix cs-fixer phpstan qa
 
 init: env install keys ## Premiere installation
 
@@ -29,3 +29,10 @@ lint-fix: ## Corrige automatiquement le style de code
 
 cs-fixer: ## Lance CS-Fixer seul (make cs-fixer ARGS="--dry-run --diff")
 	docker compose run --rm php vendor/bin/php-cs-fixer fix $(ARGS)
+
+phpstan: ## Lance PHPStan seul (make phpstan ARGS="--level=max")
+	docker compose run --rm php vendor/bin/phpstan analyse $(ARGS)
+
+qa: ## Corrige le style puis lance PHPStan (CS_ARGS et PHPSTAN_ARGS separes)
+	$(MAKE) cs-fixer ARGS="$(CS_ARGS)"
+	$(MAKE) phpstan ARGS="$(PHPSTAN_ARGS)"
