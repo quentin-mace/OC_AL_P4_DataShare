@@ -17,14 +17,21 @@ class File
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE)]
-    private ?\DateTime $expirationDate = null;
+    /**
+     * Stored in UTC, with a second precision so that short lifespans stay
+     * expressible.
+     */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private ?\DateTimeImmutable $expirationDate = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $password = null;
 
-    #[ORM\Column]
-    private ?\DateTime $uploadDate = null;
+    /**
+     * Stored in UTC.
+     */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private ?\DateTimeImmutable $uploadDate = null;
 
     #[ORM\Column(length: 255)]
     private ?string $name = null;
@@ -32,13 +39,21 @@ class File
     #[ORM\Column(enumType: FileType::class)]
     private ?FileType $type = null;
 
-    #[ORM\Column]
-    private ?float $size = null;
+    /**
+     * Size in bytes.
+     */
+    #[ORM\Column(type: Types::BIGINT)]
+    private ?int $size = null;
 
     #[ORM\Column(length: 255)]
     private ?string $storageKey = null;
 
+    /**
+     * Null for an anonymous upload. Owned files are removed with their owner,
+     * see User::$files.
+     */
     #[ORM\ManyToOne(inversedBy: 'files')]
+    #[ORM\JoinColumn(nullable: true)]
     private ?User $owner = null;
 
     /**
@@ -57,12 +72,12 @@ class File
         return $this->id;
     }
 
-    public function getExpirationDate(): ?\DateTime
+    public function getExpirationDate(): ?\DateTimeImmutable
     {
         return $this->expirationDate;
     }
 
-    public function setExpirationDate(\DateTime $expirationDate): static
+    public function setExpirationDate(\DateTimeImmutable $expirationDate): static
     {
         $this->expirationDate = $expirationDate;
 
@@ -81,12 +96,12 @@ class File
         return $this;
     }
 
-    public function getUploadDate(): ?\DateTime
+    public function getUploadDate(): ?\DateTimeImmutable
     {
         return $this->uploadDate;
     }
 
-    public function setUploadDate(\DateTime $uploadDate): static
+    public function setUploadDate(\DateTimeImmutable $uploadDate): static
     {
         $this->uploadDate = $uploadDate;
 
@@ -117,12 +132,12 @@ class File
         return $this;
     }
 
-    public function getSize(): ?float
+    public function getSize(): ?int
     {
         return $this->size;
     }
 
-    public function setSize(float $size): static
+    public function setSize(int $size): static
     {
         $this->size = $size;
 
@@ -165,6 +180,9 @@ class File
     {
         if (!$this->tags->contains($tag)) {
             $this->tags->add($tag);
+            // Keep the inverse side in sync; the contains() guards on both ends
+            // stop the recursion.
+            $tag->addFile($this);
         }
 
         return $this;
@@ -172,7 +190,9 @@ class File
 
     public function removeTag(Tag $tag): static
     {
-        $this->tags->removeElement($tag);
+        if ($this->tags->removeElement($tag)) {
+            $tag->removeFile($this);
+        }
 
         return $this;
     }
