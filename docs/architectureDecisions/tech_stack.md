@@ -39,6 +39,45 @@ Deux décisions ont été séparées : où vivent les octets, et par où ils tra
 
 Effet de bord utile : l'endpoint d'upload reste un sujet de mesure réel pour le test k6 de PERF.md.
 
+## Fin de vie de MinIO Community Edition
+
+**Statut** : accepté, 2026-09-10, ticket [#8](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/8)
+
+Le choix du #1 porte sur l'API S3, MinIO n'en étant qu'une implémentation. La question restée ouverte était de savoir si cette lecture tenait. L'actualité de MinIO en fournit la démonstration, plus tôt que prévu.
+
+L'édition communautaire a été progressivement abandonnée par son éditeur, qui recentre son activité sur son offre commerciale AIStor.
+
+| Date | Événement |
+|---|---|
+| Juin 2025 | Retrait des fonctions d'administration de la console web communautaire. L'administration ne passe plus que par la ligne de commande `mc`. |
+| Octobre 2025 | Arrêt de la publication des binaires et des images de conteneur de l'édition communautaire. |
+| Février 2026 | Dépôt marqué comme non maintenu. |
+| Avril 2026 | Dépôt archivé en lecture seule. Plus aucune évolution ni correctif de sécurité. |
+
+**Décision** : conserver MinIO, en épinglant des versions explicites dans `compose.yaml`.
+
+- `minio/minio:RELEASE.2025-09-07T16-13-09Z`, dernière image officielle publiée, celle sur laquelle `latest` pointe encore aujourd'hui.
+- `minio/mc:RELEASE.2025-08-13T08-35-41Z`, pour la création du bucket.
+
+Le tag `latest` est écarté pour deux raisons cumulées : il ne nomme aucune version, donc l'installation n'est pas reproductible, et il n'est plus republié, donc rien ne garantit qu'il reste disponible.
+
+### Alternatives évaluées
+
+| Option | Raison de l'écarter |
+|---|---|
+| Fork communautaire `pgsty/minio` | Versions 2026 disponibles et correctifs suivis, mais déplace la confiance vers un mainteneur unique sans apport fonctionnel pour le projet. |
+| Image durcie `chainguard/minio` | Pertinente si la chaîne d'approvisionnement est une exigence contractuelle, ce qui n'est pas le cas ici. |
+| Garage, SeaweedFS, RustFS | Remplacements crédibles, mais coût d'apprentissage pris sur les livrables, pour un bénéfice nul sur le code applicatif. |
+| AWS S3 réel | Déjà écarté au #1, exige une carte bancaire et casse les scripts de déploiement. |
+
+Le critère d'arbitrage du #1 s'applique inchangé : la maîtrise préalable du stack primant sur l'intérêt technique, changer de brique maintenant coûterait du temps de livrable sans rien apporter.
+
+### Risque assumé et coût de sortie
+
+Le risque réel de l'absence de correctifs de sécurité est faible sur le périmètre du projet : environnement de développement et de démonstration, données non sensibles, aucune exposition sur Internet. En exploitation réelle, la décision serait à réviser, et c'est précisément ce que le coût de sortie rend possible.
+
+L'application n'appelle jamais MinIO. Elle s'adresse à Flysystem, qui s'adresse à l'API S3. Remplacer l'implémentation revient à renseigner d'autres valeurs de `STORAGE_S3_*`, sans qu'aucune ligne de code applicatif soit concernée. La disparition de la brique retenue laisse donc le projet intact, ce qui est exactement l'effet recherché par la décision de stockage du #1.
+
 ## Autres décisions
 
 - **Format de réponse de l'API** : JSON simple, et non le JSON-LD par défaut d'API Platform. Le front est écrit à la main et n'exploiterait pas les métadonnées de description. Conséquence connue, une collection est un simple tableau, sans enveloppe de pagination. Sans impact, le MVP n'impose ni tri ni pagination.
@@ -47,8 +86,8 @@ Effet de bord utile : l'endpoint d'upload reste un sujet de mesure réel pour le
 ## Points de vigilance
 
 - **Limites PHP.** L'upload transitant par l'API, `upload_max_filesize`, `post_max_size`, `max_execution_time` et les limites du reverse proxy doivent accepter 1 Go, et être documentés dans les scripts de déploiement. Limite à mesurer dans PERF.md, l'upload par URL présignée étant l'axe d'optimisation identifié.
-- **Endpoint MinIO joignable depuis le navigateur.** L'URL présignée doit porter l'endpoint public, pas le nom de conteneur interne.
+- **Endpoint MinIO joignable depuis le navigateur.** Résolu au #8. La signature de l'URL présignée couvre son nom d'hôte, l'URL ne peut donc pas être réécrite après signature sans devenir invalide. Deux clients S3 coexistent : `aws.s3.client` sur l'adresse interne du conteneur, pour les lectures et écritures de l'application, et `aws.s3.public_client` sur l'adresse joignable par le navigateur, exposé comme storage Flysystem `public.storage` et réservé à l'émission des URLs présignées.
+- **Surcharge de `STORAGE_S3_PUBLIC_ENDPOINT` en déploiement.** Sa valeur par défaut vise l'environnement local. Oubliée en production, elle n'empêche pas le démarrage et produit des URLs présignées injoignables, donc une panne visible seulement côté navigateur. À intégrer à la checklist du #23.
 - **Opérations hors CRUD API Platform.** L'upload multipart et l'émission d'URL présignée demandent des opérations personnalisées et une documentation OpenAPI manuelle.
 - **Deux rapports de couverture** à présenter, back et front, pour justifier le seuil de 70 %.
 - **Accessibilité.** React ne fournit aucun garde-fou, les libellés, le focus et les rôles ARIA sont à la charge du développement.
-La lecture retenue est que le choix porte sur l'API S3, MinIO n'en étant qu'une implémentation, ce qui satisfait la contrainte tout en restant gratuit et auto-hébergeable. À confirmer.

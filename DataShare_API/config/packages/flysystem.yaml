@@ -7,3 +7,9 @@ flysystem:
                 client: 'aws.s3.client'
                 bucket: '%env(STORAGE_S3_BUCKET)%'
                 prefix: ''
+        public.storage:
+            adapter: 'aws'
+            options:
+                client: 'aws.s3.public_client'
+                bucket: '%env(STORAGE_S3_BUCKET)%'
+                prefix: ''

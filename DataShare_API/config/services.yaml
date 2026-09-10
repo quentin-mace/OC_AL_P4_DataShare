@@ -32,3 +32,15 @@ services:
                 credentials:
                     key: '%env(STORAGE_S3_KEY)%'
                     secret: '%env(STORAGE_S3_SECRET)%'
+
+    aws.s3.public_client:
+        class: Aws\S3\S3Client
+        arguments:
+            -
+                version: 'latest'
+                region: '%env(STORAGE_S3_REGION)%'
+                endpoint: '%env(STORAGE_S3_PUBLIC_ENDPOINT)%'
+                use_path_style_endpoint: '%env(bool:STORAGE_S3_USE_PATH_STYLE)%'
+                credentials:
+                    key: '%env(STORAGE_S3_KEY)%'
+                    secret: '%env(STORAGE_S3_SECRET)%'
