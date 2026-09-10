@@ -10,7 +10,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class UserRegistrationTest extends WebTestCase
 {
-    private const string VALID_PAYLOAD = '{"email":"alice@example.com","plainPassword":"motdepasse123","firstName":"Alice","lastName":"Martin"}';
+    private const string VALID_PAYLOAD = '{"email":"alice@example.com","plainPassword":"correct-cheval-batterie","firstName":"Alice","lastName":"Martin"}';
 
     private KernelBrowser $client;
 
@@ -56,10 +56,10 @@ final class UserRegistrationTest extends WebTestCase
         $hash = $user->getPassword();
 
         self::assertNotNull($hash);
-        self::assertNotSame('motdepasse123', $hash);
+        self::assertNotSame('correct-cheval-batterie', $hash);
         self::assertTrue(
             static::getContainer()->get(UserPasswordHasherInterface::class)
-                ->isPasswordValid($user, 'motdepasse123'),
+                ->isPasswordValid($user, 'correct-cheval-batterie'),
         );
     }
 
@@ -70,7 +70,7 @@ final class UserRegistrationTest extends WebTestCase
     public function testItSaltsEachPasswordIndependently(): void
     {
         $this->register(self::VALID_PAYLOAD);
-        $this->register('{"email":"bob@example.com","plainPassword":"motdepasse123","firstName":"Bob","lastName":"Durand"}');
+        $this->register('{"email":"bob@example.com","plainPassword":"correct-cheval-batterie","firstName":"Bob","lastName":"Durand"}');
 
         self::assertResponseStatusCodeSame(201);
         self::assertNotSame(
@@ -88,9 +88,25 @@ final class UserRegistrationTest extends WebTestCase
         self::assertSame(['email'], $this->violatedFields());
     }
 
-    public function testItRejectsAPasswordShorterThanEightCharacters(): void
+    /**
+     * Fifteen distinct characters drawn from every character class: strong
+     * enough to pass PasswordStrength, so only the length rule can reject it.
+     */
+    public function testItRejectsAPasswordShorterThanSixteenCharacters(): void
     {
-        $this->register('{"email":"alice@example.com","plainPassword":"court","firstName":"Alice","lastName":"Martin"}');
+        $this->register('{"email":"alice@example.com","plainPassword":"aB3$dE6&gH9!jK2","firstName":"Alice","lastName":"Martin"}');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame(['plainPassword'], $this->violatedFields());
+    }
+
+    /**
+     * Long enough to pass the length rule, but built from a single repeated
+     * character, so only the strength rule can reject it.
+     */
+    public function testItRejectsALongButGuessablePassword(): void
+    {
+        $this->register('{"email":"alice@example.com","plainPassword":"aaaaaaaaaaaaaaaa","firstName":"Alice","lastName":"Martin"}');
 
         self::assertResponseStatusCodeSame(422);
         self::assertSame(['plainPassword'], $this->violatedFields());
@@ -98,7 +114,7 @@ final class UserRegistrationTest extends WebTestCase
 
     public function testItRejectsAMalformedEmail(): void
     {
-        $this->register('{"email":"pas-un-email","plainPassword":"motdepasse123","firstName":"Alice","lastName":"Martin"}');
+        $this->register('{"email":"pas-un-email","plainPassword":"correct-cheval-batterie","firstName":"Alice","lastName":"Martin"}');
 
         self::assertResponseStatusCodeSame(422);
         self::assertSame(['email'], $this->violatedFields());
@@ -117,7 +133,7 @@ final class UserRegistrationTest extends WebTestCase
      */
     public function testItIgnoresRolesSubmittedByTheClient(): void
     {
-        $this->register('{"email":"mallory@example.com","plainPassword":"motdepasse123","firstName":"Mal","lastName":"Ory","roles":["ROLE_ADMIN"]}');
+        $this->register('{"email":"mallory@example.com","plainPassword":"correct-cheval-batterie","firstName":"Mal","lastName":"Ory","roles":["ROLE_ADMIN"]}');
 
         self::assertResponseStatusCodeSame(201);
         self::assertSame(['ROLE_USER'], $this->findUser('mallory@example.com')->getRoles());
@@ -129,7 +145,7 @@ final class UserRegistrationTest extends WebTestCase
      */
     public function testItIgnoresAPasswordHashSubmittedByTheClient(): void
     {
-        $this->register('{"email":"mallory@example.com","plainPassword":"motdepasse123","firstName":"Mal","lastName":"Ory","password":"injecte"}');
+        $this->register('{"email":"mallory@example.com","plainPassword":"correct-cheval-batterie","firstName":"Mal","lastName":"Ory","password":"injecte"}');
 
         self::assertResponseStatusCodeSame(201);
         self::assertNotSame('injecte', $this->findUser('mallory@example.com')->getPassword());

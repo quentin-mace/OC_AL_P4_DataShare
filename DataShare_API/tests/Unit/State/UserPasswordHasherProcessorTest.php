@@ -19,12 +19,12 @@ final class UserPasswordHasherProcessorTest extends TestCase
             ->setEmail('alice@example.com')
             ->setFirstName('Alice')
             ->setLastName('Martin')
-            ->setPlainPassword('motdepasse123');
+            ->setPlainPassword('correct-cheval-batterie');
 
         $hasher = $this->createMock(UserPasswordHasherInterface::class);
         $hasher->expects($this->once())
             ->method('hashPassword')
-            ->with($user, 'motdepasse123')
+            ->with($user, 'correct-cheval-batterie')
             ->willReturn('hashed-password');
 
         $persistProcessor = $this->createMock(ProcessorInterface::class);

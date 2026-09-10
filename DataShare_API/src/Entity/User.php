@@ -59,11 +59,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * UserPasswordHasherProcessor. Never persisted, never returned.
      *
      * The upper bound is the length beyond which Symfony refuses to hash.
+     *
+     * Length alone says nothing about how guessable a password is, so
+     * PasswordStrength scores its entropy from length and character variety.
      */
-    #[ApiProperty(description: 'Mot de passe en clair, 8 caracteres minimum.')]
+    #[ApiProperty(description: 'Mot de passe en clair, 16 caracteres minimum, robustesse moyenne exigee.')]
     #[Groups(['user:write'])]
     #[Assert\NotBlank]
-    #[Assert\Length(min: 8, max: 4096)]
+    #[Assert\Length(min: 16, max: 4096)]
+    #[Assert\PasswordStrength]
     private ?string $plainPassword = null;
 
     #[ORM\Column(length: 255)]
