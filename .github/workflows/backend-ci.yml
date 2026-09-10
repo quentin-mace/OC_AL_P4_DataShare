@@ -34,6 +34,11 @@ jobs:
       - name: Static analysis (PHPStan)
         run: docker compose run --rm php composer lint:phpstan
 
+      - name: Prepare test database
+        run: |
+          docker compose run --rm -e APP_ENV=test php bin/console doctrine:database:create --if-not-exists --no-interaction
+          docker compose run --rm -e APP_ENV=test php bin/console doctrine:migrations:migrate --no-interaction
+
       - name: Tests (PHPUnit + PCOV)
         run: docker compose run --rm -e APP_ENV=test php vendor/bin/phpunit --coverage-text
 
