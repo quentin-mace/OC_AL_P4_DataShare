@@ -78,10 +78,32 @@ Le risque réel de l'absence de correctifs de sécurité est faible sur le péri
 
 L'application n'appelle jamais MinIO. Elle s'adresse à Flysystem, qui s'adresse à l'API S3. Remplacer l'implémentation revient à renseigner d'autres valeurs de `STORAGE_S3_*`, sans qu'aucune ligne de code applicatif soit concernée. La disparition de la brique retenue laisse donc le projet intact, ce qui est exactement l'effet recherché par la décision de stockage du #1.
 
+## Politique de mot de passe des comptes
+
+**Statut** : accepté, 2026-09-10, ticket [#32](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/32)
+
+Les spécifications demandent huit caractères minimum. Ce seuil borne la longueur, il ne dit rien de la prédictibilité. L'US03 étant la porte d'entrée de tout le reste, la règle retenue est plus stricte que la demande.
+
+**Décision** : seize caractères minimum et une note de robustesse au moins moyenne, par les contraintes `Length` et `PasswordStrength` du composant Validator.
+
+`PasswordStrength` estime l'entropie à partir du nombre de caractères **distincts** et des classes de caractères présentes. Un motif répété est donc sanctionné même s'il coche toutes les classes : `aB3$aB3$aB3$aB3` fait quinze caractères mais n'en compte que quatre distincts, et se voit refusé. C'est exactement le mot de passe qu'un utilisateur croit fort.
+
+### Alternative évaluée
+
+`NotCompromisedPassword` répond à une autre question, celle de savoir si le mot de passe figure dans une fuite de données connue. Un mot de passe peut satisfaire la règle ci-dessus et pourtant circuler dans des listes publiques. Sur la confidentialité, le protocole est correct, seuls les cinq premiers caractères de l'empreinte SHA-1 quittent le serveur, et la comparaison finale est locale.
+
+La contrainte est écartée pour une raison d'architecture, pas de sécurité : elle ferait dépendre la création de compte d'un appel HTTP vers un service tiers, donc d'une latence et d'un point de panne externe, sur un parcours critique. `config/packages/validator.yaml` la désactive déjà en environnement de test, le coût de reprise de la décision reste donc faible.
+
+### Conséquences
+
+- La règle est appliquée côté serveur, seul endroit qui fasse foi. Le formulaire front la reproduit en zod pour afficher l'erreur avant l'envoi, sans jamais s'y substituer.
+- L'écart avec les huit caractères des spécifications est assumé et documenté ici, il est à mentionner dans `SECURITY.md`.
+
 ## Autres décisions
 
 - **Format de réponse de l'API** : JSON simple, et non le JSON-LD par défaut d'API Platform. Le front est écrit à la main et n'exploiterait pas les métadonnées de description. Conséquence connue, une collection est un simple tableau, sans enveloppe de pagination. Sans impact, le MVP n'impose ni tri ni pagination.
 - **Outillage de tests** : PHPUnit + PCOV, Vitest + React Testing Library, Cypress, k6 (plutot gatling ou octoperf).
+- **Isolation des tests back** : `dama/doctrine-test-bundle`, qui enveloppe chaque test dans une transaction annulée en fin de test. Écarté, le nettoyage manuel des tables, dont le coût se répète à chaque nouvelle classe de test au lieu d'être payé une fois. Les tests visent la base `app_test`, Doctrine suffixant déjà le nom de la base en environnement de test.
 
 ## Points de vigilance
 

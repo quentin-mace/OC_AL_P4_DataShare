@@ -1,4 +1,4 @@
-.PHONY: init env install keys migrate migration schema up down test lint lint-fix cs-fixer phpstan qa
+.PHONY: init env install keys migrate migration schema up down test-db test lint lint-fix cs-fixer phpstan qa
 
 # Prefixe pour executer une commande dans le conteneur php : reutilise le
 # conteneur en cours si la stack est demarree, sinon en cree un jetable. Les
@@ -34,7 +34,11 @@ up: ## Demarre l'application (API sur :8080, MinIO sur :9001)
 down: ## Arrete l'application
 	docker compose down
 
-test: ## Lance les tests (PHPUnit + couverture PCOV)
+test-db: ## Cree la base de test et y joue les migrations
+	$(DC) -e APP_ENV=test php bin/console doctrine:database:create --if-not-exists --no-interaction
+	$(DC) -e APP_ENV=test php bin/console doctrine:migrations:migrate --no-interaction
+
+test: test-db ## Lance les tests (PHPUnit + couverture PCOV)
 	$(DC) -e APP_ENV=test php vendor/bin/phpunit
 
 lint: ## Verifie le style (CS-Fixer) et l'analyse statique (PHPStan)

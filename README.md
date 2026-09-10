@@ -32,10 +32,13 @@ Après avoir modifié une entité, générer la migration, la relire, puis la jo
 ### Tests et qualité
 
 ```bash
-make test
-make lint   # CS-Fixer et PHPStan, sans rien modifier
-make qa     # corrige le style puis lance PHPStan
+make test      # prépare la base de test, puis lance PHPUnit
+make test-db   # crée la base de test et y joue les migrations
+make lint      # CS-Fixer et PHPStan, sans rien modifier
+make qa        # corrige le style puis lance PHPStan
 ```
+
+Les tests tournent sur une base distincte, `app_test`, que `make test-db` crée et migre. La base de développement n'est donc jamais touchée. Chaque test s'exécute dans une transaction annulée à la fin, grâce à `dama/doctrine-test-bundle` : les tests sont indépendants les uns des autres et n'ont aucun nettoyage à faire.
 
 Les commandes s'exécutent dans le conteneur `php` déjà démarré quand la stack tourne, et dans un conteneur jetable sinon. Toutes les cibles disponibles sont dans `DataShare_API/Makefile`.
 

@@ -1,6 +1,12 @@
 api_platform:
-    title: Hello API Platform
+    title: DataShare API
     version: 1.0.0
+    # Plain JSON: the default JSON-LD brings nothing to a hand-written front-end.
+    formats:
+        json: ['application/json']
+    # Errors stay in RFC 7807, which names the offending fields under "violations".
+    error_formats:
+        jsonproblem: ['application/problem+json']
     defaults:
         stateless: true
         cache_headers:
