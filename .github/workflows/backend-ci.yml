@@ -39,6 +39,10 @@ jobs:
           docker compose run --rm -e APP_ENV=test php bin/console doctrine:database:create --if-not-exists --no-interaction
           docker compose run --rm -e APP_ENV=test php bin/console doctrine:migrations:migrate --no-interaction
 
+      # Les cles ne sont pas commitees, et sans elles aucun JWT ne peut etre signe.
+      - name: Generate test JWT keys
+        run: docker compose run --rm -e APP_ENV=test php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction
+
       - name: Tests (PHPUnit + PCOV)
         run: docker compose run --rm -e APP_ENV=test php vendor/bin/phpunit --coverage-text
 
