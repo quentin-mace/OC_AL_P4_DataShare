@@ -6,10 +6,16 @@ Contrat d'interface front/back pour le MVP. Réponses en JSON simple (voir tech_
 
 | Méthode | Route | US | Auth | Corps de la requête | Réponse |
 |---|---|---|---|---|---|
-| POST | /api/register | US03 | non | `{ email, password }` | 201 `{ id, email }` |
+| POST | /api/register | US03 | non | `{ email, plainPassword, firstName, lastName }` | 201 `{ id, email, firstName, lastName }` |
 | POST | /api/login | US04 | non | `{ email, password }` | 200 `{ token }` (JWT) |
 
-Le token JWT est ensuite transmis dans l'en-tête `Authorization: Bearer <token>` sur les routes qui le requièrent.
+Le mot de passe est soumis dans `plainPassword` à l'inscription : il n'est ni stocké ni renvoyé, seul son condensé l'est. Il doit faire au moins 16 caractères et atteindre un score de robustesse moyen.
+
+Le token JWT est ensuite transmis dans l'en-tête `Authorization: Bearer <token>` sur les routes qui le requièrent. Il vaut une heure et ne peut pas être révoqué avant son expiration, d'où cette durée courte.
+
+Un mot de passe faux et une adresse inconnue renvoient le même 401, au mot près, afin de ne pas révéler quels comptes existent. Un corps de requête mal formé ou incomplet renvoie 400.
+
+Au-delà de cinq échecs en quinze minutes, la connexion renvoie 429 pour ce compte, y compris si le bon mot de passe est finalement présenté. Un second compteur, cinq fois plus large, s'applique par adresse IP.
 
 ## Fichiers
 
@@ -42,8 +48,11 @@ Le fichier n'est jamais servi directement par l'API : la route de téléchargeme
 
 ## Codes d'erreur communs
 
-- 400 : validation (taille > 1 Go, type de fichier interdit, durée d'expiration > 7 jours, mot de passe < 6 caractères)
+- 400 : requête illisible, corps JSON mal formé ou champ de connexion absent
 - 401 : authentification manquante ou invalide, ou mot de passe de téléchargement incorrect
 - 403 : action sur une ressource dont l'utilisateur n'est pas propriétaire
 - 404 / 410 : ressource introuvable ou lien de téléchargement expiré
-- 409 : email déjà utilisé à l'inscription
+- 422 : validation (email déjà utilisé, mot de passe trop court ou trop faible, taille > 1 Go, type de fichier interdit, durée d'expiration > 7 jours)
+- 429 : trop de tentatives de connexion échouées
+
+Les erreurs de validation suivent la RFC 7807 : les champs fautifs sont listés sous `violations`, chacun avec son `propertyPath` et son message.
