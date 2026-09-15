@@ -22,7 +22,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[UniqueEntity(fields: ['email'], message: 'Un compte existe deja avec cette adresse email.')]
 #[ApiResource(
     operations: [
-        new Post(processor: UserPasswordHasherProcessor::class),
+        // Creating a user is registering: the URL says so, rather than exposing
+        // the collection route API Platform would derive from the class name.
+        new Post(uriTemplate: '/register', processor: UserPasswordHasherProcessor::class),
     ],
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:write']],

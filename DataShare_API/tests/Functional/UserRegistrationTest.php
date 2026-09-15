@@ -155,7 +155,7 @@ final class UserRegistrationTest extends WebTestCase
     {
         $this->client->request(
             'POST',
-            '/api/users',
+            '/api/register',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
             content: $json,
         );
