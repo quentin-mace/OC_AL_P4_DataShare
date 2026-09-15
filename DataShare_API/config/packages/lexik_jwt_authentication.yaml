@@ -2,3 +2,7 @@ lexik_jwt_authentication:
     secret_key: '%env(resolve:JWT_SECRET_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
+    # A stolen token stays usable until it expires and cannot be revoked, so the
+    # lifetime is kept short enough to limit the damage, and long enough to avoid
+    # logging the user out in the middle of an upload.
+    token_ttl: '%env(int:JWT_TTL)%'

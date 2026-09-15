@@ -19,17 +19,42 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            # A JWT carries everything needed to identify its bearer, so nothing
+            # is kept between two requests and no session cookie is issued.
+            stateless: true
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
+            # Credentials arrive as JSON, under the field names fixed by the API
+            # contract; Lexik turns a successful check into the {"token": ...}
+            # response and a failed one into a 401.
+            json_login:
+                # The path, not the route name: Lexik reuses this value verbatim
+                # to document the endpoint in the OpenAPI schema.
+                check_path: /api/login
+                username_path: email
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+            # Guessing a password is only worth attempting at speed. Symfony
+            # counts failures per account, and a second time per IP with a limit
+            # five times higher, which catches someone spraying many accounts.
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+
+            # Reads "Authorization: Bearer <token>" on every other request and
+            # restores the matching user.
+            jwt: ~
+
+            # Without this, an unauthenticated call to a protected route would be
+            # answered with a redirection; the JWT authenticator answers 401 JSON.
+            entry_point: jwt
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # Routes are left open here and protected one operation at a time on the
+        # API Platform side, since some of them are public by design (registering
+        # an account, downloading a shared file).
 
 when@test:
     security:
