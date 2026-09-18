@@ -69,6 +69,24 @@ final class FileUploadTest extends WebTestCase
         self::assertSame(self::OWNER_EMAIL, $file->getOwner()?->getEmail());
     }
 
+    /**
+     * A browser form (Swagger UI's "Try it out" included) cannot omit a
+     * field it renders: an untouched optional field is still submitted, as
+     * an empty string. That must behave like the field was never sent, not
+     * like an invalid value for it.
+     */
+    public function testItTreatsEmptyOptionalFieldsAsAbsent(): void
+    {
+        $this->upload($this->token($this->owner), ['expiresInDays' => '', 'password' => '', 'tags' => '']);
+
+        self::assertResponseStatusCodeSame(201);
+        $body = $this->decodeResponse();
+        self::assertFalse($body['hasPassword']);
+        self::assertSame([], $body['tags']);
+
+        $this->keepForCleanup((int) $body['id']);
+    }
+
     public function testItRejectsAnUploadWithoutAToken(): void
     {
         $this->upload(null);

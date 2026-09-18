@@ -32,7 +32,19 @@ final readonly class MultipartDecoder implements DecoderInterface
             return [];
         }
 
-        return array_merge($request->request->all(), $request->files->all());
+        // An HTML form field cannot be omitted the way a JSON key can, so a
+        // client that leaves an optional field untouched (Swagger UI's
+        // multipart "Try it out" included) still submits it, as an empty
+        // string. Treat that the same as an absent field, so it falls back
+        // to its default rather than fail to denormalize (e.g. an empty
+        // string where the "tags" array is expected) or read as an invalid
+        // value (e.g. an empty "password" rejected as too short).
+        $fields = array_filter(
+            $request->request->all(),
+            static fn (mixed $value): bool => '' !== $value,
+        );
+
+        return array_merge($fields, $request->files->all());
     }
 
     public function supportsDecoding(string $format): bool
