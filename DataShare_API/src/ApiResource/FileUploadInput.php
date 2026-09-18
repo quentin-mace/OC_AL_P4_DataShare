@@ -2,6 +2,7 @@
 
 namespace App\ApiResource;
 
+use ApiPlatform\Metadata\ApiProperty;
 use App\Validator\ForbiddenExtension;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -12,6 +13,13 @@ final class FileUploadInput
     #[Assert\NotNull(message: 'Un fichier est requis.')]
     #[Assert\File(maxSize: '1G')]
     #[ForbiddenExtension]
+    // Without this, the nullable PHP type makes API Platform document this
+    // as {"type": ["string", "null"], "format": "binary"} (OpenAPI 3.1 union
+    // syntax). Swagger UI only renders a file picker when "type" is exactly
+    // the string "string", so a type array silently falls back to a plain
+    // text input, and submitting it sends "file" as text instead of an
+    // actual upload.
+    #[ApiProperty(openapiContext: ['type' => 'string', 'format' => 'binary'])]
     public ?UploadedFile $file = null;
 
     /**
