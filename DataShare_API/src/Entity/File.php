@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\ApiResource\FileUploadInput;
 use App\Enum\FileType;
 use App\Repository\FileRepository;
@@ -23,6 +24,11 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             security: "is_granted('IS_AUTHENTICATED_FULLY')",
             input: FileUploadInput::class,
             processor: FileUploadProcessor::class,
+            // API Platform does not translate the security expression above
+            // into OpenAPI on its own: without this, Swagger UI has no way
+            // to know the route needs the JWT scheme, so it never attaches
+            // the Authorize'd token to this operation's requests.
+            openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
     ],
     normalizationContext: ['groups' => ['file:read']],
