@@ -14,6 +14,7 @@ make init   # dépendances, clés JWT, démarrage de la stack et migrations
 
 - API : http://localhost:8080 (doc interactive sur `/api`)
 - Console MinIO : http://localhost:9001 (`minioadmin` / voir `.env`)
+- Adminer (base de données) : http://localhost:8081 — système PostgreSQL, serveur `database` (pré-rempli), utilisateur/mot de passe/base dans `DataShare_API/.env` (`app` / `!ChangeMe!` / `app` par défaut)
 
 Ensuite, `make up` et `make down` suffisent au quotidien.
 

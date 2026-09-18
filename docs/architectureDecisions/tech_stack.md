@@ -39,6 +39,14 @@ Deux décisions ont été séparées : où vivent les octets, et par où ils tra
 
 Effet de bord utile : l'endpoint d'upload reste un sujet de mesure réel pour le test k6 de PERF.md.
 
+## Durée de vie de l'URL présignée de téléchargement
+
+**Statut** : accepté, 2026-09-18, ticket [#38](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/38)
+
+**Décision** : 60 secondes.
+
+La validité d'une URL présignée S3 ne couvre que l'instant où le navigateur initie la requête GET, pas la durée du transfert qui suit : elle n'a donc aucun lien avec la taille du fichier, y compris à 1 Go. Soixante secondes laissent largement le temps au navigateur de démarrer le téléchargement dès la réponse de `POST /api/downloads/{downloadToken}`, tout en limitant la fenêtre pendant laquelle l'URL resterait exploitable si elle fuitait (log d'accès, historique du navigateur, proxy intermédiaire).
+
 ## Fin de vie de MinIO Community Edition
 
 **Statut** : accepté, 2026-09-10, ticket [#8](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/8)
