@@ -19,6 +19,16 @@ services:
       # - ./docker/db/data:/var/lib/postgresql/data:rw
 ###< doctrine/doctrine-bundle ###
 
+  # Interface web pour inspecter/modifier la base pendant les tests manuels.
+  # Image "standalone" : serveur PHP integre, pas besoin d'un nginx dedie.
+  adminer:
+    image: adminer:4-standalone
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: database
+
   php:
     build:
       context: .

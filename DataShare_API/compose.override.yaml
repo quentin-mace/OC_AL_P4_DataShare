@@ -6,6 +6,10 @@ services:
       - "5432"
 ###< doctrine/doctrine-bundle ###
 
+  adminer:
+    ports:
+      - "8081:8080"
+
   nginx:
     ports:
       - "8080:80"
