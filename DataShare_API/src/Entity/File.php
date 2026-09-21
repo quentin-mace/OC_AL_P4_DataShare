@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
@@ -15,6 +16,7 @@ use App\Enum\FileType;
 use App\Repository\FileRepository;
 use App\State\DownloadMetadataProvider;
 use App\State\DownloadProcessor;
+use App\State\FileDeleteProcessor;
 use App\State\FileUploadProcessor;
 use App\State\UserFilesProvider;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -50,6 +52,17 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // Declares ?tag= so it shows up in OpenAPI and reaches the
             // provider through $context['filters'].
             parameters: ['tag' => new QueryParameter()],
+            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+        ),
+        new Delete(
+            // No provider is declared, so API Platform loads the entity with
+            // the default Doctrine item provider: an unknown id answers 404
+            // without a line of code here. The expression below is evaluated
+            // on that loaded object, hence the 403 on someone else's file. It
+            // also covers anonymous uploads, whose owner is null and can
+            // therefore never equal an authenticated user.
+            security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getOwner() === user",
+            processor: FileDeleteProcessor::class,
             openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
         new Get(
