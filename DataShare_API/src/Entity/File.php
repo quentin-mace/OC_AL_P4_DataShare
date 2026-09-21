@@ -3,11 +3,16 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
+use App\ApiResource\DownloadPasswordInput;
 use App\ApiResource\FileUploadInput;
+use App\ApiResource\PresignedDownloadUrl;
 use App\Enum\FileType;
 use App\Repository\FileRepository;
+use App\State\DownloadMetadataProvider;
+use App\State\DownloadProcessor;
 use App\State\FileUploadProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -30,6 +35,24 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // the Authorize'd token to this operation's requests.
             openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
+        new Get(
+            uriTemplate: '/downloads/{downloadToken}',
+            uriVariables: 'downloadToken',
+            provider: DownloadMetadataProvider::class,
+            normalizationContext: ['groups' => ['download:read']],
+        ),
+        new Post(
+            uriTemplate: '/downloads/{downloadToken}',
+            uriVariables: 'downloadToken',
+            status: 200,
+            input: DownloadPasswordInput::class,
+            output: PresignedDownloadUrl::class,
+            processor: DownloadProcessor::class,
+            // Overrides the class-level file:read groups, which would
+            // otherwise filter out presignedUrl/expiresIn: PresignedDownloadUrl
+            // is a plain DTO with no groups of its own.
+            normalizationContext: [],
+        ),
     ],
     normalizationContext: ['groups' => ['file:read']],
 )]
@@ -46,7 +69,7 @@ class File
      * expressible.
      */
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Groups(['file:read'])]
+    #[Groups(['file:read', 'download:read'])]
     #[SerializedName('expiresAt')]
     private ?\DateTimeImmutable $expirationDate = null;
 
@@ -64,7 +87,7 @@ class File
     private ?\DateTimeImmutable $uploadDate = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['file:read'])]
+    #[Groups(['file:read', 'download:read'])]
     private ?string $name = null;
 
     #[ORM\Column(enumType: FileType::class)]
@@ -75,14 +98,14 @@ class File
      * categorizes it.
      */
     #[ORM\Column(length: 255)]
-    #[Groups(['file:read'])]
+    #[Groups(['file:read', 'download:read'])]
     private ?string $mimeType = null;
 
     /**
      * Size in bytes.
      */
     #[ORM\Column(type: Types::BIGINT)]
-    #[Groups(['file:read'])]
+    #[Groups(['file:read', 'download:read'])]
     private ?int $size = null;
 
     #[ORM\Column(length: 255)]
@@ -125,7 +148,7 @@ class File
      * then be read through getPassword() instead of this method, leaking the
      * hash under the "hasPassword" key.
      */
-    #[Groups(['file:read'])]
+    #[Groups(['file:read', 'download:read'])]
     #[SerializedName('hasPassword')]
     public function isPasswordProtected(): bool
     {
