@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\File;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +17,38 @@ class FileRepository extends ServiceEntityRepository
         parent::__construct($registry, File::class);
     }
 
-    //    /**
-    //     * @return File[] Returns an array of File objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('f')
-    //            ->andWhere('f.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('f.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * The whole history of an owner, expired files included: the dashboard
+     * lists them too, and its Tous/Actifs/Expire filter runs client-side on
+     * the loaded collection.
+     *
+     * Tags are eagerly fetched, every row exposing its tag names.
+     *
+     * @return list<File>
+     */
+    public function findByOwner(User $owner, ?string $tag = null): array
+    {
+        $queryBuilder = $this->createQueryBuilder('f')
+            ->leftJoin('f.tags', 't')
+            ->addSelect('t')
+            ->andWhere('f.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->orderBy('f.uploadDate', 'DESC');
 
-    //    public function findOneBySomeField($value): ?File
-    //    {
-    //        return $this->createQueryBuilder('f')
-    //            ->andWhere('f.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        if (null !== $tag) {
+            // Filtering on the joined alias would also strip the other tags
+            // from the fetched rows, so the match is made on a separate join.
+            $queryBuilder
+                ->innerJoin('f.tags', 'filtered')
+                ->andWhere('filtered.name = :tag')
+                // A tag belongs to its owner, two users may share a name.
+                ->andWhere('filtered.owner = :owner')
+                ->setParameter('tag', $tag);
+        }
+
+        /** @var list<File> $files */
+        $files = $queryBuilder->getQuery()->getResult();
+
+        return $files;
+    }
 }
