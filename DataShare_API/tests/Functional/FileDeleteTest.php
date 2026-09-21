@@ -86,6 +86,24 @@ final class FileDeleteTest extends WebTestCase
         self::assertFalse($this->storage()->fileExists($storageKey), 'The object must be gone from MinIO.');
     }
 
+    /**
+     * US07 states an anonymous upload gives no way to manage the file. No
+     * rule is needed for that: the item provider does find the row, and the
+     * operation's expression compares its null owner to the authenticated
+     * user, which can never match.
+     */
+    public function testItRefusesToDeleteAnAnonymousUpload(): void
+    {
+        $file = $this->uploadFile(null, 'anonyme.pdf');
+        $storageKey = $this->storageKey((int) $file['id']);
+
+        $this->delete((int) $file['id'], $this->token($this->owner));
+
+        self::assertResponseStatusCodeSame(403);
+        self::assertNotNull($this->findFile((int) $file['id']));
+        self::assertTrue($this->storage()->fileExists($storageKey), 'A refused deletion must not touch the object.');
+    }
+
     public function testItRefusesToDeleteTheFileOfAnotherUser(): void
     {
         $file = $this->uploadFile($this->owner, 'a-moi.pdf');
@@ -147,18 +165,23 @@ final class FileDeleteTest extends WebTestCase
      *
      * @return array<string, mixed>
      */
-    private function uploadFile(User $owner, string $name, array $fields = []): array
+    private function uploadFile(?User $owner, string $name, array $fields = []): array
     {
+        $server = [
+            'HTTP_ACCEPT' => 'application/json',
+            'CONTENT_TYPE' => 'multipart/form-data',
+        ];
+        // A null owner is the anonymous upload of US07.
+        if (null !== $owner) {
+            $server['HTTP_AUTHORIZATION'] = 'Bearer '.$this->token($owner);
+        }
+
         $this->client->request(
             'POST',
             '/api/files',
             parameters: $fields,
             files: ['file' => new UploadedFile($this->smallFilePath(), $name, 'application/pdf', test: true)],
-            server: [
-                'HTTP_AUTHORIZATION' => 'Bearer '.$this->token($owner),
-                'HTTP_ACCEPT' => 'application/json',
-                'CONTENT_TYPE' => 'multipart/form-data',
-            ],
+            server: $server,
         );
 
         $body = $this->decodeResponse();

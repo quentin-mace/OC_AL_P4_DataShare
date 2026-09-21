@@ -47,10 +47,11 @@ final readonly class FileUploadProcessor implements ProcessorInterface
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): File
     {
         $owner = $this->security->getUser();
-        if (!$owner instanceof User) {
-            // The operation is behind IS_AUTHENTICATED_FULLY, so this would
-            // signal a misconfiguration rather than a client error.
-            throw new \LogicException('The file upload operation requires an authenticated user.');
+        if (null !== $owner && !$owner instanceof User) {
+            // A null user is the anonymous upload of US07. Anything else than
+            // a User would mean the firewall was wired to another user class,
+            // a misconfiguration rather than a client error.
+            throw new \LogicException('The file upload operation cannot resolve the authenticated user.');
         }
 
         $uploadedFile = $data->file;
@@ -87,10 +88,18 @@ final readonly class FileUploadProcessor implements ProcessorInterface
         $file->setExpirationDate(
             (new \DateTimeImmutable())->modify(sprintf('+%d days', $data->expiresInDays ?? self::DEFAULT_EXPIRATION_IN_DAYS)),
         );
+        // Null for an anonymous upload, see US07.
         $file->setOwner($owner);
 
         if (null !== $data->password) {
             $file->setPassword($this->passwordHasher->hash($data->password));
+        }
+
+        if ([] !== $data->tags && null === $owner) {
+            // AuthenticatedOnly on FileUploadInput::$tags answers 422 long
+            // before this point; the guard only makes sure a tag is never
+            // silently dropped should that constraint ever be removed.
+            throw new \LogicException('Tags cannot be attached to an anonymous upload.');
         }
 
         foreach ($data->tags as $tagName) {
