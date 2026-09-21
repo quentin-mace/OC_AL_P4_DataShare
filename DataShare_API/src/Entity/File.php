@@ -31,14 +31,24 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
     operations: [
         new Post(
             inputFormats: ['multipart' => ['multipart/form-data']],
-            security: "is_granted('IS_AUTHENTICATED_FULLY')",
             input: FileUploadInput::class,
             processor: FileUploadProcessor::class,
-            // API Platform does not translate the security expression above
-            // into OpenAPI on its own: without this, Swagger UI has no way
-            // to know the route needs the JWT scheme, so it never attaches
-            // the Authorize'd token to this operation's requests.
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+            // No security expression: authentication is optional here, an
+            // anonymous upload landing with a null owner (US07). Optional is
+            // not ignored though, a malformed or expired Bearer header still
+            // answers 401: JWTAuthenticator::supports() returns a strict true,
+            // which switches the lazy firewall to eager authentication well
+            // before this operation runs. The two 401 tests in
+            // FileUploadTest are the only guards left on that behaviour.
+            //
+            // The security below is documentation only. API Platform builds
+            // no root security requirement here (none of api_keys/http_auth/
+            // oauth is configured) and the Lexik factory only registers the
+            // JWT *scheme*, so without this Swagger UI would never attach the
+            // Authorize'd token. The empty ArrayObject is the OpenAPI way of
+            // spelling "or no auth at all"; a bare [] would serialize as a
+            // JSON array where an object is required.
+            openapi: new OpenApiOperation(security: [['JWT' => []], new \ArrayObject()]),
         ),
         new GetCollection(
             security: "is_granted('IS_AUTHENTICATED_FULLY')",

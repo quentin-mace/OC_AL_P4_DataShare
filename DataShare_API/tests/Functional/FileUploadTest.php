@@ -87,13 +87,37 @@ final class FileUploadTest extends WebTestCase
         $this->keepForCleanup((int) $body['id']);
     }
 
-    public function testItRejectsAnUploadWithoutAToken(): void
+    /**
+     * US07: the same route serves both cases, only the owner differs. The
+     * file is then reachable through its download link alone, since it
+     * belongs to no account that could list or delete it.
+     */
+    public function testItUploadsAFileWithoutAnOwnerWhenNoTokenIsSent(): void
     {
-        $this->upload(null);
+        $this->upload(null, ['expiresInDays' => '3']);
 
-        self::assertResponseStatusCodeSame(401);
+        self::assertResponseStatusCodeSame(201);
+
+        $body = $this->decodeResponse();
+        self::assertEqualsCanonicalizing(
+            ['id', 'name', 'size', 'mimeType', 'downloadToken', 'expiresAt', 'hasPassword', 'tags'],
+            array_keys($body),
+        );
+        self::assertSame('rapport.pdf', $body['name']);
+        self::assertSame([], $body['tags']);
+        self::assertNotEmpty($body['downloadToken']);
+
+        $file = $this->keepForCleanup((int) $body['id']);
+        self::assertNull($file->getOwner());
     }
 
+    /**
+     * Optional does not mean ignored. Sending an Authorization header is a
+     * claim about who you are: the upload operation carries no security
+     * expression any more, but the firewall authenticates eagerly as soon as
+     * the JWT authenticator says it supports the request, so a broken token
+     * is a 401 rather than a silent fallback to an anonymous upload.
+     */
     public function testItRejectsAnUploadWithAnInvalidToken(): void
     {
         $this->upload('ceci-n-est-pas-un-jwt');
@@ -101,11 +125,61 @@ final class FileUploadTest extends WebTestCase
         self::assertResponseStatusCodeSame(401);
     }
 
+    /**
+     * Same reasoning as above, for a token that was valid an hour ago.
+     */
     public function testItRejectsAnUploadWithAnExpiredToken(): void
     {
         $this->upload($this->expiredToken($this->owner));
 
         self::assertResponseStatusCodeSame(401);
+    }
+
+    /**
+     * A tag belongs to an account, so it cannot be attached to a file that
+     * has none. Refusing is preferred over accepting and dropping, which
+     * would let the client believe its file was tagged.
+     */
+    public function testItRejectsTagsOnAnAnonymousUpload(): void
+    {
+        $this->upload(null, ['tags' => ['facture']]);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame(['tags'], $this->violatedFields());
+        self::assertSame(
+            'Les tags sont reserves aux comptes connectes.',
+            $this->decodeResponse()['violations'][0]['message'],
+        );
+    }
+
+    /**
+     * The rejection above must not catch a field the client never filled in:
+     * MultipartDecoder drops empty strings, and the constraint ignores what
+     * is left. Without this, Swagger UI's "Try it out" would answer 422 on an
+     * anonymous upload for a tags field nobody touched.
+     */
+    public function testItAcceptsAnAnonymousUploadWithAnEmptyTagsField(): void
+    {
+        $this->upload(null, ['expiresInDays' => '', 'password' => '', 'tags' => '']);
+
+        self::assertResponseStatusCodeSame(201);
+        $this->keepForCleanup((int) $this->decodeResponse()['id']);
+    }
+
+    /**
+     * Tags are the only restricted field: US07 keeps the optional password
+     * and expiry of US01.
+     */
+    public function testItAcceptsAPasswordAndACustomExpirationOnAnAnonymousUpload(): void
+    {
+        $this->upload(null, ['password' => 'un-mot-de-passe', 'expiresInDays' => '2']);
+
+        self::assertResponseStatusCodeSame(201);
+        $body = $this->decodeResponse();
+        self::assertTrue($body['hasPassword']);
+
+        $file = $this->keepForCleanup((int) $body['id']);
+        self::assertNull($file->getOwner());
     }
 
     public function testItStoresTheDownloadPasswordHashedAndNeverReturnsIt(): void

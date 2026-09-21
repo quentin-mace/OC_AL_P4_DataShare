@@ -27,6 +27,8 @@ Au-delà de cinq échecs en quinze minutes, la connexion renvoie 429 pour ce com
 
 `downloadToken` est l'identifiant non prédictible utilisé dans le lien de téléchargement partagé.
 
+`POST /api/files` accepte un envoi sans en-tête `Authorization` (US07). Le fichier n'appartient alors à aucun compte : il n'apparaît dans aucun historique, ne peut pas être supprimé, et son lien de téléchargement est le seul moyen d'y accéder jusqu'à l'expiration. Les `tags` y sont refusés (422 sur `tags`), un tag appartenant à un compte. Facultative ne veut pas dire ignorée : un `Authorization` présent mais invalide ou expiré renvoie 401, il n'est jamais traité comme un envoi anonyme.
+
 `GET /api/files` ne renvoie que les fichiers du compte connecté, y compris ceux dont le lien a expiré : la maquette du tableau de bord les affiche avec la mention "Ce fichier a expiré, il n'est plus stocké chez nous". `status` vaut `active` ou `expired`, valeur dérivée de `expiresAt` et non stockée en base.
 
 `hasPassword` et `downloadToken` ne figuraient pas dans la version initiale de ce contrat. Ils ont été ajoutés pour que le tableau de bord affiche le cadenas et le bouton "Accéder" sans un second appel par fichier.
@@ -58,7 +60,7 @@ Le fichier n'est jamais servi directement par l'API : la route de téléchargeme
 - 401 : authentification manquante ou invalide, ou mot de passe de téléchargement incorrect
 - 403 : action sur une ressource dont l'utilisateur n'est pas propriétaire
 - 404 / 410 : ressource introuvable ou lien de téléchargement expiré
-- 422 : validation (email déjà utilisé, mot de passe trop court ou trop faible, taille > 1 Go, type de fichier interdit, durée d'expiration > 7 jours)
+- 422 : validation (email déjà utilisé, mot de passe trop court ou trop faible, taille > 1 Go, type de fichier interdit, durée d'expiration > 7 jours, tags soumis sans compte)
 - 429 : trop de tentatives de connexion échouées
 
 Les erreurs de validation suivent la RFC 7807 : les champs fautifs sont listés sous `violations`, chacun avec son `propertyPath` et son message.

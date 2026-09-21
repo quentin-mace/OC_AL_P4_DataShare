@@ -79,6 +79,20 @@ final class FileListTest extends WebTestCase
         self::assertSame(['facture'], $body[0]['tags']);
     }
 
+    /**
+     * US07 states an anonymous upload gives no access to a history. It
+     * belongs to no account, so it can surface in none of them.
+     */
+    public function testItDoesNotListAnAnonymousUpload(): void
+    {
+        $this->uploadFile(null, 'anonyme.pdf');
+
+        $this->list($this->owner);
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame([], $this->decodeResponse());
+    }
+
     public function testItReturnsAnEmptyArrayForAnOwnerWithoutFiles(): void
     {
         $this->list($this->owner);
@@ -185,18 +199,23 @@ final class FileListTest extends WebTestCase
      *
      * @return array<string, mixed>
      */
-    private function uploadFile(User $owner, string $name, array $fields = []): array
+    private function uploadFile(?User $owner, string $name, array $fields = []): array
     {
+        $server = [
+            'HTTP_ACCEPT' => 'application/json',
+            'CONTENT_TYPE' => 'multipart/form-data',
+        ];
+        // A null owner is the anonymous upload of US07.
+        if (null !== $owner) {
+            $server['HTTP_AUTHORIZATION'] = 'Bearer '.$this->token($owner);
+        }
+
         $this->client->request(
             'POST',
             '/api/files',
             parameters: $fields,
             files: ['file' => new UploadedFile($this->smallFilePath(), $name, 'application/pdf', test: true)],
-            server: [
-                'HTTP_AUTHORIZATION' => 'Bearer '.$this->token($owner),
-                'HTTP_ACCEPT' => 'application/json',
-                'CONTENT_TYPE' => 'multipart/form-data',
-            ],
+            server: $server,
         );
 
         $body = $this->decodeResponse();

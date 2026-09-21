@@ -3,6 +3,7 @@
 namespace App\ApiResource;
 
 use ApiPlatform\Metadata\ApiProperty;
+use App\Validator\AuthenticatedOnly;
 use App\Validator\ForbiddenExtension;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -37,6 +38,9 @@ final class FileUploadInput
      * @var list<string>
      */
     #[Assert\All([new Assert\Length(max: 30)])]
+    // A tag belongs to an account: it is reused across that account's files
+    // and filters its history, neither of which an anonymous upload has.
+    #[AuthenticatedOnly(message: 'Les tags sont reserves aux comptes connectes.')]
     public array $tags = [];
 
     #[Assert\Callback]

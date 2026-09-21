@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\PasswordHasher\PasswordHasherInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[CoversClass(FileUploadProcessor::class)]
 final class FileUploadProcessorTest extends TestCase
@@ -221,6 +222,75 @@ final class FileUploadProcessorTest extends TestCase
         $processor->process($this->uploadInput(), new Post());
     }
 
+    /**
+     * An anonymous upload is a complete upload, not a degraded one: only the
+     * owner is missing.
+     */
+    public function testItLeavesTheOwnerNullForAnAnonymousUpload(): void
+    {
+        $storage = $this->createMock(FilesystemOperator::class);
+        $storage->expects($this->once())->method('writeStream');
+
+        $processor = new FileUploadProcessor(
+            $this->passthroughPersistProcessor(),
+            $storage,
+            $this->createStub(PasswordHasherInterface::class),
+            $this->createStub(TagRepository::class),
+            $this->securityFor(null),
+        );
+
+        $file = $processor->process($this->uploadInput(), new Post());
+
+        self::assertNull($file->getOwner());
+        self::assertSame('rapport.pdf', $file->getName());
+        self::assertNotNull($file->getStorageKey());
+        self::assertNotNull($file->getDownloadToken());
+    }
+
+    /**
+     * Tag::$owner is not nullable, so a tag without an account could not even
+     * be persisted. AuthenticatedOnly answers 422 long before this guard.
+     */
+    public function testItRefusesToAttachTagsToAnAnonymousUpload(): void
+    {
+        $input = $this->uploadInput();
+        $input->tags = ['facture'];
+
+        $processor = new FileUploadProcessor(
+            $this->passthroughPersistProcessor(),
+            $this->createStub(FilesystemOperator::class),
+            $this->createStub(PasswordHasherInterface::class),
+            $this->createStub(TagRepository::class),
+            $this->securityFor(null),
+        );
+
+        $this->expectException(\LogicException::class);
+
+        $processor->process($input, new Post());
+    }
+
+    /**
+     * Null is the anonymous case, but any other user class would mean the
+     * firewall is wired to a provider this processor cannot work with.
+     */
+    public function testItRejectsAnAuthenticatedPrincipalThatIsNotAUser(): void
+    {
+        $security = $this->createStub(Security::class);
+        $security->method('getUser')->willReturn($this->createStub(UserInterface::class));
+
+        $processor = new FileUploadProcessor(
+            $this->passthroughPersistProcessor(),
+            $this->createStub(FilesystemOperator::class),
+            $this->createStub(PasswordHasherInterface::class),
+            $this->createStub(TagRepository::class),
+            $security,
+        );
+
+        $this->expectException(\LogicException::class);
+
+        $processor->process($this->uploadInput(), new Post());
+    }
+
     private function uploadInput(): FileUploadInput
     {
         $input = new FileUploadInput();
@@ -254,7 +324,7 @@ final class FileUploadProcessorTest extends TestCase
         return $repository;
     }
 
-    private function securityFor(User $owner): Security
+    private function securityFor(?User $owner): Security
     {
         $security = $this->createStub(Security::class);
         $security->method('getUser')->willReturn($owner);
