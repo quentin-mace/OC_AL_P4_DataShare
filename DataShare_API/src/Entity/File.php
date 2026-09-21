@@ -4,7 +4,9 @@ namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\QueryParameter;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\ApiResource\DownloadPasswordInput;
 use App\ApiResource\FileUploadInput;
@@ -14,6 +16,7 @@ use App\Repository\FileRepository;
 use App\State\DownloadMetadataProvider;
 use App\State\DownloadProcessor;
 use App\State\FileUploadProcessor;
+use App\State\UserFilesProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -33,6 +36,20 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // into OpenAPI on its own: without this, Swagger UI has no way
             // to know the route needs the JWT scheme, so it never attaches
             // the Authorize'd token to this operation's requests.
+            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+        ),
+        new GetCollection(
+            security: "is_granted('IS_AUTHENTICATED_FULLY')",
+            provider: UserFilesProvider::class,
+            normalizationContext: ['groups' => ['file:list']],
+            // A collection is a plain array, see tech_stack.md: pagination is
+            // left to the front-end, which also filters active/expired
+            // client-side. Enabled, API Platform would silently cut the
+            // history at its 30th item.
+            paginationEnabled: false,
+            // Declares ?tag= so it shows up in OpenAPI and reaches the
+            // provider through $context['filters'].
+            parameters: ['tag' => new QueryParameter()],
             openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
         new Get(
@@ -61,7 +78,7 @@ class File
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['file:read'])]
+    #[Groups(['file:read', 'file:list'])]
     private ?int $id = null;
 
     /**
@@ -69,7 +86,7 @@ class File
      * expressible.
      */
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Groups(['file:read', 'download:read'])]
+    #[Groups(['file:read', 'file:list', 'download:read'])]
     #[SerializedName('expiresAt')]
     private ?\DateTimeImmutable $expirationDate = null;
 
@@ -84,10 +101,12 @@ class File
      * Stored in UTC.
      */
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['file:list'])]
+    #[SerializedName('sentAt')]
     private ?\DateTimeImmutable $uploadDate = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['file:read', 'download:read'])]
+    #[Groups(['file:read', 'file:list', 'download:read'])]
     private ?string $name = null;
 
     #[ORM\Column(enumType: FileType::class)]
@@ -105,7 +124,7 @@ class File
      * Size in bytes.
      */
     #[ORM\Column(type: Types::BIGINT)]
-    #[Groups(['file:read', 'download:read'])]
+    #[Groups(['file:read', 'file:list', 'download:read'])]
     private ?int $size = null;
 
     #[ORM\Column(length: 255)]
@@ -115,7 +134,7 @@ class File
      * The unpredictable identifier used in the shared download link.
      */
     #[ORM\Column(length: 255, unique: true)]
-    #[Groups(['file:read'])]
+    #[Groups(['file:read', 'file:list'])]
     private ?string $downloadToken = null;
 
     /**
@@ -148,7 +167,7 @@ class File
      * then be read through getPassword() instead of this method, leaking the
      * hash under the "hasPassword" key.
      */
-    #[Groups(['file:read', 'download:read'])]
+    #[Groups(['file:read', 'file:list', 'download:read'])]
     #[SerializedName('hasPassword')]
     public function isPasswordProtected(): bool
     {
@@ -156,9 +175,20 @@ class File
     }
 
     /**
+     * The state of the share link, derived from the expiration date rather
+     * than stored: a column would go stale the second the date passes, with
+     * nothing to write it back.
+     */
+    #[Groups(['file:list'])]
+    public function getStatus(): string
+    {
+        return $this->expirationDate > new \DateTimeImmutable() ? 'active' : 'expired';
+    }
+
+    /**
      * @return list<string>
      */
-    #[Groups(['file:read'])]
+    #[Groups(['file:read', 'file:list'])]
     #[SerializedName('tags')]
     public function getTagNames(): array
     {

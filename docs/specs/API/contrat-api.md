@@ -22,10 +22,16 @@ Au-delà de cinq échecs en quinze minutes, la connexion renvoie 429 pour ce com
 | Méthode | Route | US | Auth | Corps de la requête | Réponse |
 |---|---|---|---|---|---|
 | POST | /api/files | US01, US07, US09 | optionnelle (connecté ou anonyme) | multipart/form-data : `file`, `expiresInDays?` (1 à 7, défaut 7), `password?` (min 6 car.), `tags?` (string[]) | 201 `{ id, name, size, mimeType, downloadToken, expiresAt, hasPassword, tags }` |
-| GET | /api/files | US05 | requise | query `tag?` (filtrage facultatif) | 200 `[{ id, name, size, sentAt, expiresAt, status, tags }]` |
+| GET | /api/files | US05 | requise | query `tag?` (filtrage facultatif) | 200 `[{ id, name, size, sentAt, expiresAt, status, hasPassword, downloadToken, tags }]` |
 | DELETE | /api/files/{id} | US06 | requise, propriétaire uniquement | aucun | 204 |
 
 `downloadToken` est l'identifiant non prédictible utilisé dans le lien de téléchargement partagé.
+
+`GET /api/files` ne renvoie que les fichiers du compte connecté, y compris ceux dont le lien a expiré : la maquette du tableau de bord les affiche avec la mention "Ce fichier a expiré, il n'est plus stocké chez nous". `status` vaut `active` ou `expired`, valeur dérivée de `expiresAt` et non stockée en base.
+
+`hasPassword` et `downloadToken` ne figuraient pas dans la version initiale de ce contrat. Ils ont été ajoutés pour que le tableau de bord affiche le cadenas et le bouton "Accéder" sans un second appel par fichier.
+
+La collection est triée par `sentAt` décroissant et renvoyée entière, sans enveloppe (voir tech_stack.md). La pagination par dix, comme les filtres Tous / Actifs / Expiré, s'applique côté client sur la liste déjà chargée, sans rechargement. Le volume reste borné par les sept jours de rétention maximum. Si l'historique devait un jour dépasser quelques centaines de lignes, la reprise consisterait à ajouter `page` et `status` en paramètres de requête, sans changer la forme de la réponse.
 
 ## Tags
 
