@@ -35,8 +35,17 @@ final class FileUploadInput
     public ?string $password = null;
 
     /**
+     * Submitted either as a comma-separated list in a single "tags" field, or
+     * as a repeated "tags[]" field; MultipartDecoder normalises both, trimming
+     * each name and dropping the blanks, so what lands here is ready to
+     * compare and to look up.
+     *
      * @var list<string>
      */
+    #[ApiProperty(
+        description: 'Liste de tags, separes par des virgules. Un tag ne peut donc pas contenir de virgule.',
+        openapiContext: ['type' => 'string', 'example' => 'facture,client-x'],
+    )]
     #[Assert\All([new Assert\Length(max: 30)])]
     // A tag belongs to an account: it is reused across that account's files
     // and filters its history, neither of which an anonymous upload has.

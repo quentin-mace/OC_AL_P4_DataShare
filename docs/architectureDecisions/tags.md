@@ -67,6 +67,28 @@ Un tag vide ne rend service à personne. Il ne ramènerait aucun résultat dans 
 | Laisser les tags orphelins en base | La table accumule des lignes que rien n'atteint, qu'aucune route ne permet de supprimer, et qui referaient surface dans toute future autocomplétion. |
 | Nettoyer périodiquement, comme la purge de l'US10 | Ajoute une commande et une planification pour une opération qui tient en deux lignes au bon endroit, et laisse entre deux passages des tags visibles mais vides. |
 
+## La virgule sépare les tags à l'envoi
+
+**Décision** : `POST /api/files` accepte les tags sous deux formes, un champ `tags` contenant une liste séparée par des virgules, ou un champ `tags[]` répété. Un nom de tag ne peut donc pas contenir de virgule.
+
+Le problème n'est apparu qu'en essayant la route depuis sa propre documentation, et il était total : l'envoi répondait 400 quoi qu'on saisisse. PHP ne construit un tableau à partir d'un formulaire que si le champ s'appelle littéralement `tags[]`. Un champ `tags` répété est écrasé, seule la dernière valeur survit, et Swagger UI ne le répète même pas : il joint les valeurs par des virgules en un champ unique. La seule forme que l'API acceptait était donc précisément celle qu'aucun formulaire ordinaire ne produit.
+
+Aucun réglage OpenAPI ne rattrape cela sans renommer le champ documenté en `tags[]`, ce qui aurait imposé d'écrire à la main le schéma des quatre champs de l'envoi et de le maintenir en parallèle du DTO. Découper sur la virgule coûte une ligne et rend le champ utilisable partout, y compris depuis la documentation.
+
+La contrepartie est assumée : un tag ne peut plus contenir de virgule. C'est la restriction qu'imposent la plupart des systèmes de tags, pour cette raison exacte.
+
+Le découpage vit dans le décodeur multipart, avec le retrait des espaces de bordure, et non plus loin dans la chaîne. C'est ce qui garantit que les deux formes d'envoi atteignent le contrôle de doublon et la résolution du tag à l'identique : sans cela, `facture` et ` facture` passeraient le contrôle de doublon puis se résoudraient vers le même nom, et heurteraient l'index unique en 500. C'est aussi ce qui aligne l'envoi sur `POST /api/files/{id}/tags`, qui nettoyait déjà les espaces de son côté.
+
+Un segment vide, comme dans `facture,` ou `a,,b`, est ignoré. C'est un artefact du séparateur et non un tag soumis, et le décodeur appliquait déjà cette règle au champ facultatif laissé intact par le client.
+
+### Alternatives évaluées
+
+| Option | Raison de l'écarter |
+|---|---|
+| Documenter le champ `tags[]` et réécrire le corps multipart à la main | Ne change pas l'API et n'interdit rien dans un nom de tag, mais fige dans l'attribut OpenAPI un schéma de quatre champs qui duplique le DTO et dérivera de lui à la première évolution. |
+| Accepter une chaîne et en faire un tag unique | Répond 201 en enregistrant un tag nommé "facture,client-x". Le client croit en avoir posé deux, l'API n'en dit rien : la même perte silencieuse que celle refusée pour les tags d'un envoi anonyme. |
+| Ne rien changer et corriger le contrat d'API | Laisse une route dont la documentation intégrée ne peut pas fonctionner, ce que le premier essai du front aurait retrouvé. |
+
 ## Deux décisions de forme
 
 **La réponse `{ id, tags }` passe par un groupe de sérialisation**, `file:tags`, posé sur l'identifiant et sur l'accesseur qui liste les noms, et non par un DTO de sortie. Le corps demandé est une projection de l'entité : les deux valeurs existent déjà, sous ces noms, dans les réponses des autres routes. Un DTO dupliquerait ce mappage et devrait être construit après l'écriture pour disposer de l'identifiant. Le DTO de sortie se justifie pour l'URL présignée de téléchargement, parce que la donnée renvoyée n'est pas le fichier ; ce n'est pas le cas ici.
@@ -82,6 +104,7 @@ Un tag vide ne rend service à personne. Il ne ramènerait aucun résultat dans 
 ## Points de vigilance
 
 - **Deux requêtes concurrentes peuvent heurter l'index unique.** Poser le même tag neuf sur deux fichiers au même instant fait passer les deux résolutions avant la première écriture, et la seconde viole `UNIQ_TAG_OWNER_NAME`. La réponse est aujourd'hui un 500 ; le jour où le cas se présente, c'est un 409 qu'il faudra renvoyer, en rattrapant l'exception d'intégrité.
+- **Une virgule dans un nom de tag le coupe en deux, sans avertissement.** C'est la contrepartie directe du séparateur, et elle n'est visible que dans la réponse, qui liste alors deux tags. Le front gagnerait à refuser la virgule dans son champ de saisie plutôt qu'à laisser la surprise arriver.
 - **La casse distingue les tags.** "Facture" et "facture" sont deux tags, en base comme dans le filtre de l'historique. C'est cohérent avec le "texte libre" de la spécification, mais un utilisateur ne le comprendra pas forcément. Une normalisation est possible plus tard, elle imposera une migration de fusion.
 - **Aucun plafond sur le nombre de tags par fichier.** La spécification dit "0 à N" et rien d'autre. Un client automatisé peut en poser des milliers, un par requête. À traiter avec la limitation de débit évoquée dans SECURITY.md ([#20](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/20)).
 - **Il n'existe pas de renommage global.** Corriger une faute de frappe sur un tag porté par dix fichiers demande dix appels. C'est la contrepartie directe de la décision sur le renommage, à garder en tête si le front veut proposer une page de gestion des tags.

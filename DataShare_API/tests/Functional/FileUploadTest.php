@@ -247,6 +247,64 @@ final class FileUploadTest extends WebTestCase
         self::assertSame(['tags'], $this->violatedFields());
     }
 
+    /**
+     * PHP only builds an array out of a field literally named "tags[]", which
+     * no plain HTML form and no Swagger UI ever sends: they submit a single
+     * comma-joined value. Refusing it left the documented field unusable.
+     */
+    public function testItAcceptsTagsAsACommaSeparatedList(): void
+    {
+        $this->upload($this->token($this->owner), ['tags' => 'facture,client-x']);
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame(['facture', 'client-x'], $this->decodeResponse()['tags']);
+    }
+
+    /**
+     * Trimming happens before the duplicate check and the tag lookup, so that
+     * both submission forms name the same tag, as POST /api/files/{id}/tags
+     * already does.
+     */
+    public function testItTrimsEachSubmittedTag(): void
+    {
+        $this->upload($this->token($this->owner), ['tags' => '  facture ,  client-x ']);
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame(['facture', 'client-x'], $this->decodeResponse()['tags']);
+    }
+
+    public function testItTrimsTagsSubmittedAsAnArray(): void
+    {
+        $this->upload($this->token($this->owner), ['tags' => ['  facture  ']]);
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame(['facture'], $this->decodeResponse()['tags']);
+    }
+
+    /**
+     * A blank segment is a separator artefact, not a submitted tag: the same
+     * treatment this decoder already gives an untouched optional field.
+     */
+    public function testItIgnoresTheBlankSegmentsOfTheList(): void
+    {
+        $this->upload($this->token($this->owner), ['tags' => 'facture,,  ,']);
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame(['facture'], $this->decodeResponse()['tags']);
+    }
+
+    /**
+     * Without trimming before the check, these two would resolve to the same
+     * tag name and hit the unique index with a 500 rather than a 422.
+     */
+    public function testItRejectsTwoTagsThatOnlyDifferBySurroundingSpaces(): void
+    {
+        $this->upload($this->token($this->owner), ['tags' => 'facture, facture']);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame(['tags'], $this->violatedFields());
+    }
+
     public function testItRejectsARequestWithoutAFile(): void
     {
         $this->client->request(

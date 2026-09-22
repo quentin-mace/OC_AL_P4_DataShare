@@ -44,7 +44,49 @@ final readonly class MultipartDecoder implements DecoderInterface
             static fn (mixed $value): bool => '' !== $value,
         );
 
+        if (isset($fields['tags'])) {
+            $fields['tags'] = self::normalizeTags($fields['tags']);
+        }
+
         return array_merge($fields, $request->files->all());
+    }
+
+    /**
+     * Accepts both ways a form can carry a list of tags.
+     *
+     * PHP only builds an array when the field is literally named "tags[]";
+     * a field repeated as plain "tags" is overwritten, and Swagger UI does
+     * not even repeat it, it submits one comma-joined value. Splitting on the
+     * comma is therefore what makes the documented field usable at all, at
+     * the price of a tag name that cannot contain a comma. See
+     * docs/architectureDecisions/tags.md.
+     *
+     * Trimming happens here rather than further down so that both forms reach
+     * the duplicate check and the tag lookup identically: " facture" and
+     * "facture" have to be the same tag, as they already are on
+     * POST /api/files/{id}/tags.
+     *
+     * A blank segment is dropped rather than refused, which is the rule this
+     * decoder already applies to an empty field just above: "facture," and
+     * "a,,b" are separator artefacts, not submitted tags.
+     */
+    private static function normalizeTags(mixed $tags): mixed
+    {
+        if (is_string($tags)) {
+            $tags = explode(',', $tags);
+        }
+
+        if (!is_array($tags)) {
+            // Anything else is left untouched for the serializer to reject.
+            return $tags;
+        }
+
+        $trimmed = array_map(
+            static fn (mixed $tag): mixed => is_string($tag) ? trim($tag) : $tag,
+            $tags,
+        );
+
+        return array_values(array_filter($trimmed, static fn (mixed $tag): bool => '' !== $tag));
     }
 
     public function supportsDecoding(string $format): bool

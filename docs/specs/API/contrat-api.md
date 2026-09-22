@@ -27,6 +27,8 @@ Au-delà de cinq échecs en quinze minutes, la connexion renvoie 429 pour ce com
 
 `downloadToken` est l'identifiant non prédictible utilisé dans le lien de téléchargement partagé.
 
+Les `tags` de `POST /api/files` s'envoient de deux façons, au choix : un champ `tags` unique contenant une liste séparée par des virgules, ou un champ `tags[]` répété. La première est ce que produisent un formulaire HTML ordinaire et Swagger UI, la seconde ce que produit un `FormData` construit à la main. Un nom de tag ne peut donc pas contenir de virgule. Chaque nom est débarrassé de ses espaces de bordure avant d'être comparé et enregistré, et un segment vide (`facture,` ou `a,,b`) est ignoré plutôt que refusé, au même titre qu'un champ facultatif laissé intact.
+
 `POST /api/files` accepte un envoi sans en-tête `Authorization` (US07). Le fichier n'appartient alors à aucun compte : il n'apparaît dans aucun historique, ne peut pas être supprimé, et son lien de téléchargement est le seul moyen d'y accéder jusqu'à l'expiration. Les `tags` y sont refusés (422 sur `tags`), un tag appartenant à un compte. Facultative ne veut pas dire ignorée : un `Authorization` présent mais invalide ou expiré renvoie 401, il n'est jamais traité comme un envoi anonyme.
 
 `GET /api/files` ne renvoie que les fichiers du compte connecté, y compris ceux dont le lien a expiré : la maquette du tableau de bord les affiche avec la mention "Ce fichier a expiré, il n'est plus stocké chez nous". `status` vaut `active` ou `expired`, valeur dérivée de `expiresAt` et non stockée en base.
