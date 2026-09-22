@@ -97,7 +97,14 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             provider: FileTagProvider::class,
             processor: FileTagAddProcessor::class,
             normalizationContext: ['groups' => ['file:tags']],
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+            // Without a summary, Swagger UI falls back on the one API Platform
+            // derives from the method and the resource, "Creates a File
+            // resource.", which describes neither what the route does nor what
+            // it answers.
+            openapi: new OpenApiOperation(
+                summary: 'Adds a tag to the file.',
+                security: [['JWT' => []]],
+            ),
         ),
         new Put(
             uriTemplate: '/files/{id}/tags/{tag}',
@@ -114,7 +121,12 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             provider: FileTagProvider::class,
             processor: FileTagRenameProcessor::class,
             normalizationContext: ['groups' => ['file:tags']],
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+            openapi: new OpenApiOperation(
+                // "Replaces the File resource." would be doubly misleading: the
+                // file is untouched, and the rename stops at this one file.
+                summary: 'Renames a tag on this file only.',
+                security: [['JWT' => []]],
+            ),
         ),
         new Delete(
             uriTemplate: '/files/{id}/tags/{tag}',
@@ -133,6 +145,9 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // status, so the schema has to be spelled out or the front would
             // never see that this route answers with the remaining tags.
             openapi: new OpenApiOperation(
+                // "Removes the File resource." would read as if the whole file
+                // were being deleted, which is what DELETE /api/files/{id} does.
+                summary: 'Removes a tag from the file.',
                 security: [['JWT' => []]],
                 responses: [
                     '200' => new OpenApiResponse(
@@ -161,6 +176,10 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // otherwise filter out presignedUrl/expiresIn: PresignedDownloadUrl
             // is a plain DTO with no groups of its own.
             normalizationContext: [],
+            // A POST here creates nothing, so the derived "Creates a File
+            // resource." is wrong: it checks the link's password, if any, and
+            // hands back a presigned URL.
+            openapi: new OpenApiOperation(summary: 'Issues a short-lived presigned download URL.'),
         ),
     ],
     normalizationContext: ['groups' => ['file:read']],
