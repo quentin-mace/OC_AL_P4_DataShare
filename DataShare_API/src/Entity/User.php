@@ -5,6 +5,7 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\Repository\UserRepository;
 use App\State\UserPasswordHasherProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -24,7 +25,13 @@ use Symfony\Component\Validator\Constraints as Assert;
     operations: [
         // Creating a user is registering: the URL says so, rather than exposing
         // the collection route API Platform would derive from the class name.
-        new Post(uriTemplate: '/register', processor: UserPasswordHasherProcessor::class),
+        new Post(
+            uriTemplate: '/register',
+            processor: UserPasswordHasherProcessor::class,
+            // The comment above applies to the documentation too: "Creates a
+            // User resource." describes the table, not what the visitor does.
+            openapi: new OpenApiOperation(summary: 'Registers a new account.'),
+        ),
     ],
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:write']],

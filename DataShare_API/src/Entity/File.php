@@ -56,7 +56,12 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // Authorize'd token. The empty ArrayObject is the OpenAPI way of
             // spelling "or no auth at all"; a bare [] would serialize as a
             // JSON array where an object is required.
-            openapi: new OpenApiOperation(security: [['JWT' => []], new \ArrayObject()]),
+            openapi: new OpenApiOperation(
+                // "Creates a File resource." says nothing of the two parcours
+                // this single route serves, which is its whole point.
+                summary: 'Uploads a file, with or without an account.',
+                security: [['JWT' => []], new \ArrayObject()],
+            ),
         ),
         new GetCollection(
             security: "is_granted('IS_AUTHENTICATED_FULLY')",
@@ -69,8 +74,13 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             paginationEnabled: false,
             // Declares ?tag= so it shows up in OpenAPI and reaches the
             // provider through $context['filters'].
-            parameters: ['tag' => new QueryParameter()],
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+            parameters: ['tag' => new QueryParameter(description: 'Keeps only the files carrying this exact tag name')],
+            openapi: new OpenApiOperation(
+                // Not "the collection of File resources": this route never
+                // returns anyone else's files, nor the anonymous uploads.
+                summary: "Retrieves the authenticated user's upload history.",
+                security: [['JWT' => []]],
+            ),
         ),
         new Delete(
             // No provider is declared, so API Platform loads the entity with
@@ -81,7 +91,13 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // therefore never equal an authenticated user.
             security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getOwner() === user",
             processor: FileDeleteProcessor::class,
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+            openapi: new OpenApiOperation(
+                // Spells out the stored object, which "Removes the File
+                // resource." leaves to guess, and tells this route apart from
+                // the tag removal further up.
+                summary: 'Deletes the file and its stored object.',
+                security: [['JWT' => []]],
+            ),
         ),
         // The three tag operations below are nested under the file rather than
         // exposed as a /tags resource: a tag has no life of its own, and the
@@ -114,7 +130,7 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
                 // against Tag::$name only documents the parameter and makes
                 // UriVariablesConverter see a string, which has no transformer
                 // and therefore leaves the value untouched.
-                'tag' => new Link(fromClass: Tag::class, identifiers: ['name'], description: 'Nom actuel du tag'),
+                'tag' => new Link(fromClass: Tag::class, identifiers: ['name'], description: 'The tag name to rename'),
             ],
             security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getOwner() === user",
             input: TagInput::class,
@@ -132,7 +148,7 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             uriTemplate: '/files/{id}/tags/{tag}',
             uriVariables: [
                 'id' => new Link(fromClass: File::class, identifiers: ['id']),
-                'tag' => new Link(fromClass: Tag::class, identifiers: ['name'], description: 'Nom du tag a retirer'),
+                'tag' => new Link(fromClass: Tag::class, identifiers: ['name'], description: 'The tag name to remove'),
             ],
             // This route removes an association, not the file: it answers with
             // the remaining tags, hence the 200 instead of the default 204.
@@ -151,7 +167,7 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
                 security: [['JWT' => []]],
                 responses: [
                     '200' => new OpenApiResponse(
-                        'Les tags restants du fichier',
+                        'The tags the file still carries',
                         new \ArrayObject([
                             'application/json' => ['schema' => ['$ref' => '#/components/schemas/File-file.tags']],
                         ]),
@@ -159,15 +175,24 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
                 ],
             ),
         ),
+        // Both share-link routes spell their URI variable out rather than use
+        // the string shorthand, which documents it as "File identifier": a
+        // download token is not the file's id, and telling the two apart is
+        // exactly what keeps the history private.
         new Get(
             uriTemplate: '/downloads/{downloadToken}',
-            uriVariables: 'downloadToken',
+            uriVariables: ['downloadToken' => new Link(fromClass: File::class, identifiers: ['downloadToken'], description: self::DOWNLOAD_TOKEN_DESCRIPTION)],
             provider: DownloadMetadataProvider::class,
             normalizationContext: ['groups' => ['download:read']],
+            openapi: new OpenApiOperation(
+                // The route answers a subset of the file, for anyone holding
+                // the link: "Retrieves a File resource." oversells it.
+                summary: 'Retrieves the metadata behind a share link.',
+            ),
         ),
         new Post(
             uriTemplate: '/downloads/{downloadToken}',
-            uriVariables: 'downloadToken',
+            uriVariables: ['downloadToken' => new Link(fromClass: File::class, identifiers: ['downloadToken'], description: self::DOWNLOAD_TOKEN_DESCRIPTION)],
             status: 200,
             input: DownloadPasswordInput::class,
             output: PresignedDownloadUrl::class,
@@ -186,6 +211,13 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
 )]
 class File
 {
+    /**
+     * Shared by the two share-link operations, which are declared before the
+     * class body is otherwise usable, hence a constant rather than a literal
+     * repeated twice.
+     */
+    private const string DOWNLOAD_TOKEN_DESCRIPTION = 'The unpredictable token from the shared download link';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

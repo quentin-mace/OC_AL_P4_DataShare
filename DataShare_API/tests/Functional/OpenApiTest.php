@@ -25,16 +25,48 @@ final class OpenApiTest extends WebTestCase
      * API Platform derives a summary from the method and the resource, which
      * reads "Creates a File resource." on a route that creates nothing and
      * "Removes the File resource." on one that only detaches a tag.
+     *
+     * Every route is listed rather than the fixed ones alone: a new operation
+     * added without a summary then fails here instead of reaching Swagger UI
+     * describing the table it happens to hang off.
      */
-    public function testItDescribesTheActionRatherThanTheResource(): void
+    public function testEveryRouteDescribesItsActionRatherThanItsResource(): void
     {
-        self::assertSame(
-            'Issues a short-lived presigned download URL.',
-            $this->summary('/api/downloads/{downloadToken}', 'post'),
-        );
-        self::assertSame('Adds a tag to the file.', $this->summary('/api/files/{id}/tags', 'post'));
-        self::assertSame('Renames a tag on this file only.', $this->summary('/api/files/{id}/tags/{tag}', 'put'));
-        self::assertSame('Removes a tag from the file.', $this->summary('/api/files/{id}/tags/{tag}', 'delete'));
+        $expected = [
+            'GET /api/downloads/{downloadToken}' => 'Retrieves the metadata behind a share link.',
+            'POST /api/downloads/{downloadToken}' => 'Issues a short-lived presigned download URL.',
+            'GET /api/files' => "Retrieves the authenticated user's upload history.",
+            'POST /api/files' => 'Uploads a file, with or without an account.',
+            'DELETE /api/files/{id}' => 'Deletes the file and its stored object.',
+            'POST /api/files/{id}/tags' => 'Adds a tag to the file.',
+            'PUT /api/files/{id}/tags/{tag}' => 'Renames a tag on this file only.',
+            'DELETE /api/files/{id}/tags/{tag}' => 'Removes a tag from the file.',
+            // Written by the Lexik bundle, and already saying what it does.
+            'POST /api/login' => 'Creates a user token.',
+            'POST /api/register' => 'Registers a new account.',
+        ];
+
+        // Sorted on both sides: the paths come out in declaration order, which
+        // is not something this test has any reason to pin down.
+        ksort($expected);
+
+        self::assertSame($expected, $this->summaries());
+    }
+
+    /**
+     * The string shorthand for a URI variable documents it as "File
+     * identifier", which a download token is not: it is the whole share link,
+     * and confusing it with the id is how a history leaks.
+     */
+    public function testItDescribesTheShareTokenAsATokenAndNotAnIdentifier(): void
+    {
+        foreach (['getGet', 'getPost'] as $accessor) {
+            $parameters = $this->openApi->getPaths()->getPath('/api/downloads/{downloadToken}')->{$accessor}()
+                ->getParameters();
+
+            self::assertSame('downloadToken', $parameters[0]->getName());
+            self::assertSame('The unpredictable token from the shared download link', $parameters[0]->getDescription());
+        }
     }
 
     /**
@@ -65,10 +97,25 @@ final class OpenApiTest extends WebTestCase
         self::assertSame(['type' => 'string'], $schema['properties']['tags']['items']);
     }
 
-    private function summary(string $path, string $method): ?string
+    /**
+     * @return array<string, ?string> keyed by "METHOD /path"
+     */
+    private function summaries(): array
     {
-        $operation = $this->openApi->getPaths()->getPath($path)->{'get'.ucfirst($method)}();
+        $summaries = [];
 
-        return $operation?->getSummary();
+        foreach ($this->openApi->getPaths()->getPaths() as $path => $pathItem) {
+            foreach (['Get', 'Post', 'Put', 'Patch', 'Delete'] as $method) {
+                $operation = $pathItem->{'get'.$method}();
+
+                if (null !== $operation) {
+                    $summaries[strtoupper($method).' '.$path] = $operation->getSummary();
+                }
+            }
+        }
+
+        ksort($summaries);
+
+        return $summaries;
     }
 }
