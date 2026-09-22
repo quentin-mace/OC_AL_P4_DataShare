@@ -27,6 +27,8 @@ Au-delà de cinq échecs en quinze minutes, la connexion renvoie 429 pour ce com
 
 `downloadToken` est l'identifiant non prédictible utilisé dans le lien de téléchargement partagé.
 
+Les `tags` de `POST /api/files` s'envoient de deux façons, au choix : un champ `tags` unique contenant une liste séparée par des virgules, ou un champ `tags[]` répété. La première est ce que produisent un formulaire HTML ordinaire et Swagger UI, la seconde ce que produit un `FormData` construit à la main. Un nom de tag ne peut donc pas contenir de virgule. Chaque nom est débarrassé de ses espaces de bordure avant d'être comparé et enregistré, et un segment vide (`facture,` ou `a,,b`) est ignoré plutôt que refusé, au même titre qu'un champ facultatif laissé intact.
+
 `POST /api/files` accepte un envoi sans en-tête `Authorization` (US07). Le fichier n'appartient alors à aucun compte : il n'apparaît dans aucun historique, ne peut pas être supprimé, et son lien de téléchargement est le seul moyen d'y accéder jusqu'à l'expiration. Les `tags` y sont refusés (422 sur `tags`), un tag appartenant à un compte. Facultative ne veut pas dire ignorée : un `Authorization` présent mais invalide ou expiré renvoie 401, il n'est jamais traité comme un envoi anonyme.
 
 `GET /api/files` ne renvoie que les fichiers du compte connecté, y compris ceux dont le lien a expiré : la maquette du tableau de bord les affiche avec la mention "Ce fichier a expiré, il n'est plus stocké chez nous". `status` vaut `active` ou `expired`, valeur dérivée de `expiresAt` et non stockée en base.
@@ -45,6 +47,14 @@ La collection est triée par `sentAt` décroissant et renvoyée entière, sans e
 
 La modification (renommage) d'un tag existant n'est pas décrite littéralement dans US08 (specs/spécifications.pdf) ; c'est une extension ajoutée à la demande du produit.
 
+`{tag}` est le nom du tag, encodé dans l'URL, et non un identifiant technique : c'est ce que le front possède déjà dans la liste renvoyée par les autres routes. Un nom contenant "/" n'est donc pas adressable par ces routes.
+
+Un nom de tag est unique par compte. Poser un nom que le compte connaît déjà rattache le fichier au tag existant plutôt que d'en créer un homonyme, ce qui est précisément ce qui permet au filtre de l'historique de fonctionner.
+
+Le renommage ne s'applique qu'au fichier désigné par l'URL : les autres fichiers du compte qui portaient l'ancien nom ne changent pas. Renommer un tag vers le nom qu'il porte déjà répond 200 sans rien modifier. Un tag qui ne porte plus aucun fichier est supprimé, il disparaît donc aussi du filtre de l'historique.
+
+Codes de réponse propres à ces trois routes : 401 sans jeton ou avec un jeton invalide ; 403 sur le fichier d'un autre compte et sur un envoi anonyme, dont le propriétaire nul ne peut jamais égaler l'utilisateur connecté ; 404 si le fichier n'existe pas, ou si le tag de l'URL n'est pas associé à ce fichier ; 422 si le tag est vide, dépasse 30 caractères, ou est déjà présent sur le fichier, toujours avec `propertyPath` à `tag`.
+
 ## Téléchargement (lien public)
 
 | Méthode | Route | US | Auth | Corps de la requête | Réponse |
@@ -59,8 +69,8 @@ Le fichier n'est jamais servi directement par l'API : la route de téléchargeme
 - 400 : requête illisible, corps JSON mal formé ou champ de connexion absent
 - 401 : authentification manquante ou invalide, ou mot de passe de téléchargement incorrect
 - 403 : action sur une ressource dont l'utilisateur n'est pas propriétaire
-- 404 / 410 : ressource introuvable ou lien de téléchargement expiré
-- 422 : validation (email déjà utilisé, mot de passe trop court ou trop faible, taille > 1 Go, type de fichier interdit, durée d'expiration > 7 jours, tags soumis sans compte)
+- 404 / 410 : ressource introuvable, tag absent du fichier, ou lien de téléchargement expiré
+- 422 : validation (email déjà utilisé, mot de passe trop court ou trop faible, taille > 1 Go, type de fichier interdit, durée d'expiration > 7 jours, tags soumis sans compte, tag vide, de plus de 30 caractères ou déjà présent sur le fichier)
 - 429 : trop de tentatives de connexion échouées
 
 Les erreurs de validation suivent la RFC 7807 : les champs fautifs sont listés sous `violations`, chacun avec son `propertyPath` et son message.

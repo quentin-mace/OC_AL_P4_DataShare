@@ -10,6 +10,7 @@ use App\Entity\Tag;
 use App\Entity\User;
 use App\Repository\TagRepository;
 use App\State\FileUploadProcessor;
+use App\State\TagResolver;
 use League\Flysystem\FilesystemOperator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -52,7 +53,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $storage,
             $this->createStub(PasswordHasherInterface::class),
-            $this->tagRepository($owner, []),
+            $this->tagResolver($owner, []),
             $this->securityFor($owner),
         );
 
@@ -77,7 +78,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $this->createStub(FilesystemOperator::class),
             $this->createStub(PasswordHasherInterface::class),
-            $this->tagRepository($owner, []),
+            $this->tagResolver($owner, []),
             $this->securityFor($owner),
         );
 
@@ -98,7 +99,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $this->createStub(FilesystemOperator::class),
             $this->createStub(PasswordHasherInterface::class),
-            $this->tagRepository($owner, []),
+            $this->tagResolver($owner, []),
             $this->securityFor($owner),
         );
 
@@ -128,7 +129,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $this->createStub(FilesystemOperator::class),
             $hasher,
-            $this->tagRepository($owner, []),
+            $this->tagResolver($owner, []),
             $this->securityFor($owner),
         );
 
@@ -149,7 +150,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $this->createStub(FilesystemOperator::class),
             $hasher,
-            $this->tagRepository($owner, []),
+            $this->tagResolver($owner, []),
             $this->securityFor($owner),
         );
 
@@ -170,7 +171,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $this->createStub(FilesystemOperator::class),
             $this->createStub(PasswordHasherInterface::class),
-            $this->tagRepository($owner, [$existingTag]),
+            $this->tagResolver($owner, [$existingTag]),
             $this->securityFor($owner),
         );
 
@@ -190,7 +191,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $this->createStub(FilesystemOperator::class),
             $this->createStub(PasswordHasherInterface::class),
-            $this->tagRepository($owner, []),
+            $this->tagResolver($owner, []),
             $this->securityFor($owner),
         );
 
@@ -215,7 +216,7 @@ final class FileUploadProcessorTest extends TestCase
             $persistProcessor,
             $this->createStub(FilesystemOperator::class),
             $this->createStub(PasswordHasherInterface::class),
-            $this->tagRepository($owner, []),
+            $this->tagResolver($owner, []),
             $this->securityFor($owner),
         );
 
@@ -235,7 +236,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $storage,
             $this->createStub(PasswordHasherInterface::class),
-            $this->createStub(TagRepository::class),
+            $this->tagResolver(new User(), []),
             $this->securityFor(null),
         );
 
@@ -260,7 +261,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $this->createStub(FilesystemOperator::class),
             $this->createStub(PasswordHasherInterface::class),
-            $this->createStub(TagRepository::class),
+            $this->tagResolver(new User(), []),
             $this->securityFor(null),
         );
 
@@ -282,7 +283,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->passthroughPersistProcessor(),
             $this->createStub(FilesystemOperator::class),
             $this->createStub(PasswordHasherInterface::class),
-            $this->createStub(TagRepository::class),
+            $this->tagResolver(new User(), []),
             $security,
         );
 
@@ -309,9 +310,13 @@ final class FileUploadProcessorTest extends TestCase
     }
 
     /**
+     * TagResolver is final readonly, so it cannot be doubled: the real one is
+     * built over a stubbed repository, as DownloadProcessorTest does with
+     * DownloadFileResolver.
+     *
      * @param list<Tag> $existingTags
      */
-    private function tagRepository(User $owner, array $existingTags): TagRepository
+    private function tagResolver(User $owner, array $existingTags): TagResolver
     {
         $repository = $this->createStub(TagRepository::class);
         $repository->method('findOneBy')->willReturnCallback(
@@ -321,7 +326,7 @@ final class FileUploadProcessorTest extends TestCase
             )) ?: null,
         );
 
-        return $repository;
+        return new TagResolver($repository);
     }
 
     private function securityFor(?User $owner): Security

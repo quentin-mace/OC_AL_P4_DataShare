@@ -9,6 +9,10 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: TagRepository::class)]
+// A tag is reused across its owner's files, so posting a name the account
+// already knows attaches the existing tag rather than creating a twin. The
+// index makes that invariant hold even if two requests race.
+#[ORM\UniqueConstraint(name: 'UNIQ_TAG_OWNER_NAME', fields: ['owner', 'name'])]
 class Tag
 {
     #[ORM\Id]
@@ -16,7 +20,8 @@ class Tag
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 30)]
+    #[Assert\Length(max: 30)]
     private ?string $name = null;
 
     #[ORM\ManyToOne(inversedBy: 'tags')]

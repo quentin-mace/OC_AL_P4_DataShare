@@ -6,10 +6,8 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\ApiResource\FileUploadInput;
 use App\Entity\File;
-use App\Entity\Tag;
 use App\Entity\User;
 use App\Enum\FileType;
-use App\Repository\TagRepository;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -35,7 +33,7 @@ final readonly class FileUploadProcessor implements ProcessorInterface
         #[Autowire(service: 'default.storage')]
         private FilesystemOperator $storage,
         private PasswordHasherInterface $passwordHasher,
-        private TagRepository $tagRepository,
+        private TagResolver $tagResolver,
         private Security $security,
     ) {
     }
@@ -103,17 +101,10 @@ final readonly class FileUploadProcessor implements ProcessorInterface
         }
 
         foreach ($data->tags as $tagName) {
-            $file->addTag($this->resolveTag($owner, $tagName));
+            $file->addTag($this->tagResolver->resolve($owner, $tagName));
         }
 
         return $this->persistProcessor->process($file, $operation, $uriVariables, $context);
-    }
-
-    private function resolveTag(User $owner, string $tagName): Tag
-    {
-        $tag = $this->tagRepository->findOneBy(['owner' => $owner, 'name' => $tagName]);
-
-        return $tag ?? (new Tag())->setName($tagName)->setOwner($owner);
     }
 
     private function generateStorageKey(string $extension): string

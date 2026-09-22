@@ -6,17 +6,25 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\QueryParameter;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
+use ApiPlatform\OpenApi\Model\Response as OpenApiResponse;
 use App\ApiResource\DownloadPasswordInput;
 use App\ApiResource\FileUploadInput;
 use App\ApiResource\PresignedDownloadUrl;
+use App\ApiResource\TagInput;
 use App\Enum\FileType;
 use App\Repository\FileRepository;
 use App\State\DownloadMetadataProvider;
 use App\State\DownloadProcessor;
 use App\State\FileDeleteProcessor;
+use App\State\FileTagAddProcessor;
+use App\State\FileTagProvider;
+use App\State\FileTagRemoveProcessor;
+use App\State\FileTagRenameProcessor;
 use App\State\FileUploadProcessor;
 use App\State\UserFilesProvider;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -48,7 +56,12 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // Authorize'd token. The empty ArrayObject is the OpenAPI way of
             // spelling "or no auth at all"; a bare [] would serialize as a
             // JSON array where an object is required.
-            openapi: new OpenApiOperation(security: [['JWT' => []], new \ArrayObject()]),
+            openapi: new OpenApiOperation(
+                // "Creates a File resource." says nothing of the two parcours
+                // this single route serves, which is its whole point.
+                summary: 'Uploads a file, with or without an account.',
+                security: [['JWT' => []], new \ArrayObject()],
+            ),
         ),
         new GetCollection(
             security: "is_granted('IS_AUTHENTICATED_FULLY')",
@@ -61,8 +74,13 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             paginationEnabled: false,
             // Declares ?tag= so it shows up in OpenAPI and reaches the
             // provider through $context['filters'].
-            parameters: ['tag' => new QueryParameter()],
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+            parameters: ['tag' => new QueryParameter(description: 'Keeps only the files carrying this exact tag name')],
+            openapi: new OpenApiOperation(
+                // Not "the collection of File resources": this route never
+                // returns anyone else's files, nor the anonymous uploads.
+                summary: "Retrieves the authenticated user's upload history.",
+                security: [['JWT' => []]],
+            ),
         ),
         new Delete(
             // No provider is declared, so API Platform loads the entity with
@@ -73,17 +91,108 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // therefore never equal an authenticated user.
             security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getOwner() === user",
             processor: FileDeleteProcessor::class,
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
+            openapi: new OpenApiOperation(
+                // Spells out the stored object, which "Removes the File
+                // resource." leaves to guess, and tells this route apart from
+                // the tag removal further up.
+                summary: 'Deletes the file and its stored object.',
+                security: [['JWT' => []]],
+            ),
         ),
+        // The three tag operations below are nested under the file rather than
+        // exposed as a /tags resource: a tag has no life of its own, and the
+        // contract answers with the file's tag list. They all go through
+        // FileTagProvider, whose docblock explains why the Doctrine one cannot
+        // be used here, and all narrow the response to {id, tags} through the
+        // file:tags group, which overrides the class-level file:read.
+        new Post(
+            uriTemplate: '/files/{id}/tags',
+            uriVariables: ['id' => new Link(fromClass: File::class, identifiers: ['id'])],
+            security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getOwner() === user",
+            input: TagInput::class,
+            provider: FileTagProvider::class,
+            processor: FileTagAddProcessor::class,
+            normalizationContext: ['groups' => ['file:tags']],
+            // Without a summary, Swagger UI falls back on the one API Platform
+            // derives from the method and the resource, "Creates a File
+            // resource.", which describes neither what the route does nor what
+            // it answers.
+            openapi: new OpenApiOperation(
+                summary: 'Adds a tag to the file.',
+                security: [['JWT' => []]],
+            ),
+        ),
+        new Put(
+            uriTemplate: '/files/{id}/tags/{tag}',
+            uriVariables: [
+                'id' => new Link(fromClass: File::class, identifiers: ['id']),
+                // A tag name, not a technical identifier. Declaring the link
+                // against Tag::$name only documents the parameter and makes
+                // UriVariablesConverter see a string, which has no transformer
+                // and therefore leaves the value untouched.
+                'tag' => new Link(fromClass: Tag::class, identifiers: ['name'], description: 'The tag name to rename'),
+            ],
+            security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getOwner() === user",
+            input: TagInput::class,
+            provider: FileTagProvider::class,
+            processor: FileTagRenameProcessor::class,
+            normalizationContext: ['groups' => ['file:tags']],
+            openapi: new OpenApiOperation(
+                // "Replaces the File resource." would be doubly misleading: the
+                // file is untouched, and the rename stops at this one file.
+                summary: 'Renames a tag on this file only.',
+                security: [['JWT' => []]],
+            ),
+        ),
+        new Delete(
+            uriTemplate: '/files/{id}/tags/{tag}',
+            uriVariables: [
+                'id' => new Link(fromClass: File::class, identifiers: ['id']),
+                'tag' => new Link(fromClass: Tag::class, identifiers: ['name'], description: 'The tag name to remove'),
+            ],
+            // This route removes an association, not the file: it answers with
+            // the remaining tags, hence the 200 instead of the default 204.
+            status: 200,
+            security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getOwner() === user",
+            provider: FileTagProvider::class,
+            processor: FileTagRemoveProcessor::class,
+            normalizationContext: ['groups' => ['file:tags']],
+            // A DELETE is documented without a response body whatever its
+            // status, so the schema has to be spelled out or the front would
+            // never see that this route answers with the remaining tags.
+            openapi: new OpenApiOperation(
+                // "Removes the File resource." would read as if the whole file
+                // were being deleted, which is what DELETE /api/files/{id} does.
+                summary: 'Removes a tag from the file.',
+                security: [['JWT' => []]],
+                responses: [
+                    '200' => new OpenApiResponse(
+                        'The tags the file still carries',
+                        new \ArrayObject([
+                            'application/json' => ['schema' => ['$ref' => '#/components/schemas/File-file.tags']],
+                        ]),
+                    ),
+                ],
+            ),
+        ),
+        // Both share-link routes spell their URI variable out rather than use
+        // the string shorthand, which documents it as "File identifier": a
+        // download token is not the file's id, and telling the two apart is
+        // exactly what keeps the history private.
         new Get(
             uriTemplate: '/downloads/{downloadToken}',
-            uriVariables: 'downloadToken',
+            uriVariables: ['downloadToken' => new Link(fromClass: File::class, identifiers: ['downloadToken'], description: self::DOWNLOAD_TOKEN_DESCRIPTION)],
             provider: DownloadMetadataProvider::class,
             normalizationContext: ['groups' => ['download:read']],
+            openapi: new OpenApiOperation(
+                // The route answers a subset of the file, for anyone holding
+                // the link: "Retrieves a File resource." oversells it.
+                summary: 'Retrieves the metadata behind a share link.',
+            ),
         ),
         new Post(
             uriTemplate: '/downloads/{downloadToken}',
-            uriVariables: 'downloadToken',
+            uriVariables: ['downloadToken' => new Link(fromClass: File::class, identifiers: ['downloadToken'], description: self::DOWNLOAD_TOKEN_DESCRIPTION)],
             status: 200,
             input: DownloadPasswordInput::class,
             output: PresignedDownloadUrl::class,
@@ -92,16 +201,27 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
             // otherwise filter out presignedUrl/expiresIn: PresignedDownloadUrl
             // is a plain DTO with no groups of its own.
             normalizationContext: [],
+            // A POST here creates nothing, so the derived "Creates a File
+            // resource." is wrong: it checks the link's password, if any, and
+            // hands back a presigned URL.
+            openapi: new OpenApiOperation(summary: 'Issues a short-lived presigned download URL.'),
         ),
     ],
     normalizationContext: ['groups' => ['file:read']],
 )]
 class File
 {
+    /**
+     * Shared by the two share-link operations, which are declared before the
+     * class body is otherwise usable, hence a constant rather than a literal
+     * repeated twice.
+     */
+    private const string DOWNLOAD_TOKEN_DESCRIPTION = 'The unpredictable token from the shared download link';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['file:read', 'file:list'])]
+    #[Groups(['file:read', 'file:list', 'file:tags'])]
     private ?int $id = null;
 
     /**
@@ -211,7 +331,7 @@ class File
     /**
      * @return list<string>
      */
-    #[Groups(['file:read', 'file:list'])]
+    #[Groups(['file:read', 'file:list', 'file:tags'])]
     #[SerializedName('tags')]
     public function getTagNames(): array
     {
@@ -367,6 +487,44 @@ class File
     {
         if ($this->tags->removeElement($tag)) {
             $tag->removeFile($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Deliberately prefixed "find" rather than "get" or "has": the serializer
+     * only considers argument-less accessors, but there is no reason to walk
+     * back towards the trap documented on isPasswordProtected().
+     */
+    public function findTag(string $name): ?Tag
+    {
+        foreach ($this->tags as $tag) {
+            if ($tag->getName() === $name) {
+                return $tag;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Drops the tag from this file, and from its owner when no file carries it
+     * anymore: User::$tags is an orphanRemoval collection, so the row is gone
+     * on flush.
+     *
+     * The order matters. removeTag() initializes Tag::$files before removing
+     * this file from it, so isEmpty() below reads an up-to-date in-memory
+     * state. Marking Tag::$files EXTRA_LAZY would break that: isEmpty() would
+     * then issue a COUNT still seeing the unflushed file_tag row, and the
+     * orphan would never be collected.
+     */
+    public function detachTag(Tag $tag): static
+    {
+        $this->removeTag($tag);
+
+        if ($tag->getFiles()->isEmpty()) {
+            $tag->getOwner()?->removeTag($tag);
         }
 
         return $this;
