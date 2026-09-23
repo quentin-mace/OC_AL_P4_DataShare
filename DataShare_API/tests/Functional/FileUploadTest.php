@@ -147,7 +147,7 @@ final class FileUploadTest extends WebTestCase
         self::assertResponseStatusCodeSame(422);
         self::assertSame(['tags'], $this->violatedFields());
         self::assertSame(
-            'Les tags sont reserves aux comptes connectes.',
+            'Tags are reserved for signed-in accounts.',
             $this->decodeResponse()['violations'][0]['message'],
         );
     }

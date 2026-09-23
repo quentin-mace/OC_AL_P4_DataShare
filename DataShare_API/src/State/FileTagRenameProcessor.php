@@ -55,7 +55,7 @@ final readonly class FileTagRenameProcessor implements ProcessorInterface
             // security expression, so a 404 there would reach a user who is not
             // the owner and let them probe other accounts' tags through the
             // difference between 403 and 404.
-            throw new NotFoundHttpException(sprintf('Le tag "%s" n\'est pas associe a ce fichier.', $currentName));
+            throw new NotFoundHttpException(sprintf('The "%s" tag is not on this file.', $currentName));
         }
 
         $newName = trim((string) $data->tag);

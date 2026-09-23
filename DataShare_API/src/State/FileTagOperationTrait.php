@@ -58,7 +58,7 @@ trait FileTagOperationTrait
      */
     private function rejectDuplicate(string $tagName): never
     {
-        $message = sprintf('Le tag "%s" est deja present sur ce fichier.', $tagName);
+        $message = sprintf('The "%s" tag is already on this file.', $tagName);
 
         throw new ValidationException(new ConstraintViolationList([new ConstraintViolation($message, $message, [], null, 'tag', $tagName)]));
     }

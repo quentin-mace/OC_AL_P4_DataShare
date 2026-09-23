@@ -78,3 +78,5 @@ Contrairement à la connexion, le compteur porte sur le lien seul et non sur le 
 - 429 : trop de tentatives échouées, à la connexion ou sur le mot de passe d'un lien de téléchargement ; l'en-tête `Retry-After` donne le délai en secondes
 
 Les erreurs de validation suivent la RFC 7807 : les champs fautifs sont listés sous `violations`, chacun avec son `propertyPath` et son message.
+
+Tous les messages renvoyés par l'API sont en anglais, `detail` comme `violations[].message`, de même que les descriptions OpenAPI. Le front n'est pas tenu de les afficher tels quels : `propertyPath` et le code de statut suffisent à choisir son propre libellé. Ce document reste en français.

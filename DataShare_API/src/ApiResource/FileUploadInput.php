@@ -11,7 +11,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 final class FileUploadInput
 {
-    #[Assert\NotNull(message: 'Un fichier est requis.')]
+    #[Assert\NotNull(message: 'A file is required.')]
     #[Assert\File(maxSize: '1G')]
     #[ForbiddenExtension]
     // Without this, the nullable PHP type makes API Platform document this
@@ -43,20 +43,20 @@ final class FileUploadInput
      * @var list<string>
      */
     #[ApiProperty(
-        description: 'Liste de tags, separes par des virgules. Un tag ne peut donc pas contenir de virgule.',
-        openapiContext: ['type' => 'string', 'example' => 'facture,client-x'],
+        description: 'Comma-separated list of tags. A tag can therefore not contain a comma.',
+        openapiContext: ['type' => 'string', 'example' => 'invoice,client-x'],
     )]
     #[Assert\All([new Assert\Length(max: 30)])]
     // A tag belongs to an account: it is reused across that account's files
     // and filters its history, neither of which an anonymous upload has.
-    #[AuthenticatedOnly(message: 'Les tags sont reserves aux comptes connectes.')]
+    #[AuthenticatedOnly(message: 'Tags are reserved for signed-in accounts.')]
     public array $tags = [];
 
     #[Assert\Callback]
     public function validateTags(ExecutionContextInterface $context): void
     {
         if (count($this->tags) !== count(array_unique($this->tags))) {
-            $context->buildViolation('Un meme tag ne peut pas etre soumis deux fois.')
+            $context->buildViolation('The same tag cannot be submitted twice.')
                 ->atPath('tags')
                 ->addViolation();
         }
