@@ -110,6 +110,7 @@ La contrainte est écartée pour une raison d'architecture, pas de sécurité : 
 ## Autres décisions
 
 - **Format de réponse de l'API** : JSON simple, et non le JSON-LD par défaut d'API Platform. Le front est écrit à la main et n'exploiterait pas les métadonnées de description. Conséquence connue, une collection est un simple tableau, sans enveloppe de pagination. Sans impact, le MVP n'impose ni tri ni pagination.
+- **Mot de passe sur un fichier** : documenté à part, dans `download_password.md`. Six caractères minimum, hachés par un service distinct de celui des comptes, et cinq tentatives par lien et par quinze minutes sur la route de téléchargement.
 - **Expiration automatique des fichiers** : documentée à part, dans `auto_expiration.md`. Purge quotidienne par commande console et cron système, portant sur l'objet stocké seul, la ligne d'historique étant conservée.
 - **Outillage de tests** : PHPUnit + PCOV, Vitest + React Testing Library, Cypress, k6 (plutot gatling ou octoperf).
 - **Isolation des tests back** : `dama/doctrine-test-bundle`, qui enveloppe chaque test dans une transaction annulée en fin de test. Écarté, le nettoyage manuel des tables, dont le coût se répète à chaque nouvelle classe de test au lieu d'être payé une fois. Les tests visent la base `app_test`, Doctrine suffixant déjà le nom de la base en environnement de test.
