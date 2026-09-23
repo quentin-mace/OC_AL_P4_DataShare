@@ -60,9 +60,13 @@ Codes de réponse propres à ces trois routes : 401 sans jeton ou avec un jeton 
 | Méthode | Route | US | Auth | Corps de la requête | Réponse |
 |---|---|---|---|---|---|
 | GET | /api/downloads/{downloadToken} | US02 | non | aucun | 200 `{ name, size, mimeType, expiresAt, hasPassword }` ; 410 si lien expiré ou invalide |
-| POST | /api/downloads/{downloadToken} | US02, US09 | non | `{ password? }` (requis si `hasPassword` = true) | 200 `{ presignedUrl, expiresIn }` ; 401 si mot de passe invalide ; 410 si lien expiré ou invalide |
+| POST | /api/downloads/{downloadToken} | US02, US09 | non | `{ password? }` (requis si `hasPassword` = true) | 200 `{ presignedUrl, expiresIn }` ; 401 si mot de passe invalide ; 429 au-delà de cinq échecs ; 410 si lien expiré ou invalide |
 
 Le fichier n'est jamais servi directement par l'API : la route de téléchargement ne fait que vérifier l'expiration et le mot de passe, puis renvoie une URL présignée MinIO/S3 à durée de vie courte (voir tech_stack.md, section "Transit des fichiers").
+
+Au-delà de cinq mots de passe faux en quinze minutes, la route renvoie 429 pour ce lien, y compris si le bon mot de passe est finalement présenté : le blocage est constaté avant toute comparaison. Seuls les échecs sont comptés, et un mot de passe juste remet le compteur du lien à zéro. Un second compteur, cinq fois plus large, s'applique par adresse IP et vise le client qui balaie plusieurs liens. La réponse porte un en-tête `Retry-After` indiquant en secondes le délai avant la prochaine tentative.
+
+Contrairement à la connexion, le compteur porte sur le lien seul et non sur le couple lien plus adresse IP : changer d'adresse ne remet donc rien à zéro, au prix d'un lien rendu indisponible un quart d'heure pour tous ses destinataires. Un lien sans mot de passe n'est jamais limité.
 
 ## Codes d'erreur communs
 
@@ -71,6 +75,6 @@ Le fichier n'est jamais servi directement par l'API : la route de téléchargeme
 - 403 : action sur une ressource dont l'utilisateur n'est pas propriétaire
 - 404 / 410 : ressource introuvable, tag absent du fichier, ou lien de téléchargement expiré
 - 422 : validation (email déjà utilisé, mot de passe trop court ou trop faible, taille > 1 Go, type de fichier interdit, durée d'expiration > 7 jours, tags soumis sans compte, tag vide, de plus de 30 caractères ou déjà présent sur le fichier)
-- 429 : trop de tentatives de connexion échouées
+- 429 : trop de tentatives échouées, à la connexion ou sur le mot de passe d'un lien de téléchargement ; l'en-tête `Retry-After` donne le délai en secondes
 
 Les erreurs de validation suivent la RFC 7807 : les champs fautifs sont listés sous `violations`, chacun avec son `propertyPath` et son message.

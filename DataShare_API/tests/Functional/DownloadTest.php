@@ -16,7 +16,10 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class DownloadTest extends WebTestCase
 {
+    use ResetsRateLimitersTrait;
+
     private const string OWNER_EMAIL = 'alice@example.com';
+    private const string PASSWORD = 'un-mot-de-passe';
 
     private KernelBrowser $client;
 
@@ -28,6 +31,7 @@ final class DownloadTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        $this->resetRateLimiters();
         $this->createUser(self::OWNER_EMAIL);
     }
 
@@ -141,6 +145,96 @@ final class DownloadTest extends WebTestCase
         $this->postDownload($token);
 
         self::assertResponseStatusCodeSame(410);
+    }
+
+    public function testItBlocksFurtherAttemptsAfterFiveWrongPasswords(): void
+    {
+        $token = $this->uploadFile(['password' => self::PASSWORD])['downloadToken'];
+
+        for ($attempt = 1; $attempt <= 5; ++$attempt) {
+            $this->postDownload($token, 'un-mauvais-mot-de-passe');
+            self::assertResponseStatusCodeSame(401);
+        }
+
+        $this->postDownload($token, 'un-mauvais-mot-de-passe');
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
+    /**
+     * The block has to come before the password is even looked at, otherwise an
+     * attacker only has to keep going until they land on the right one.
+     */
+    public function testItBlocksTheCorrectPasswordTooOnceThrottled(): void
+    {
+        $token = $this->uploadFile(['password' => self::PASSWORD])['downloadToken'];
+
+        for ($attempt = 1; $attempt <= 5; ++$attempt) {
+            $this->postDownload($token, 'un-mauvais-mot-de-passe');
+        }
+
+        $this->postDownload($token, self::PASSWORD);
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
+    /**
+     * The header is set on the exception, and API Platform has to carry it over
+     * to the error response: that hand-off is the least obvious link of the
+     * chain, so it gets its own test.
+     */
+    public function testItAnswersTheDelayBeforeTheNextAttempt(): void
+    {
+        $token = $this->uploadFile(['password' => self::PASSWORD])['downloadToken'];
+
+        for ($attempt = 1; $attempt <= 6; ++$attempt) {
+            $this->postDownload($token, 'un-mauvais-mot-de-passe');
+        }
+
+        self::assertResponseStatusCodeSame(429);
+        self::assertResponseHasHeader('Retry-After');
+        self::assertGreaterThan(0, (int) $this->client->getResponse()->headers->get('Retry-After'));
+    }
+
+    public function testThrottlingIsScopedToTheLink(): void
+    {
+        $blocked = $this->uploadFile(['password' => self::PASSWORD])['downloadToken'];
+        $other = $this->uploadFile(['password' => self::PASSWORD])['downloadToken'];
+
+        for ($attempt = 1; $attempt <= 6; ++$attempt) {
+            $this->postDownload($blocked, 'un-mauvais-mot-de-passe');
+        }
+
+        $this->postDownload($other, self::PASSWORD);
+
+        self::assertResponseStatusCodeSame(200);
+    }
+
+    public function testASuccessfulPasswordResetsTheCounter(): void
+    {
+        $token = $this->uploadFile(['password' => self::PASSWORD])['downloadToken'];
+
+        for ($attempt = 1; $attempt <= 4; ++$attempt) {
+            $this->postDownload($token, 'un-mauvais-mot-de-passe');
+        }
+
+        $this->postDownload($token, self::PASSWORD);
+        self::assertResponseStatusCodeSame(200);
+
+        for ($attempt = 1; $attempt <= 4; ++$attempt) {
+            $this->postDownload($token, 'un-mauvais-mot-de-passe');
+            self::assertResponseStatusCodeSame(401);
+        }
+    }
+
+    public function testALinkWithoutPasswordIsNeverThrottled(): void
+    {
+        $token = $this->uploadFile()['downloadToken'];
+
+        for ($attempt = 1; $attempt <= 6; ++$attempt) {
+            $this->postDownload($token);
+            self::assertResponseStatusCodeSame(200);
+        }
     }
 
     /**

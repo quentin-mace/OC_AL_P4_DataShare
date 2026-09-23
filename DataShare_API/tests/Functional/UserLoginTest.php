@@ -11,6 +11,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class UserLoginTest extends WebTestCase
 {
+    use ResetsRateLimitersTrait;
+
     private const string EMAIL = 'alice@example.com';
     private const string PASSWORD = 'correct-cheval-batterie';
 
@@ -19,7 +21,7 @@ final class UserLoginTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
-        $this->resetLoginThrottling();
+        $this->resetRateLimiters();
         $this->createUser();
     }
 
@@ -162,16 +164,6 @@ final class UserLoginTest extends WebTestCase
             true,
             flags: JSON_THROW_ON_ERROR,
         );
-    }
-
-    /**
-     * The rate limiter counts in a cache pool, which outlives the database
-     * transaction: without this, failures from one test would be held against
-     * the next one.
-     */
-    private function resetLoginThrottling(): void
-    {
-        static::getContainer()->get('cache.rate_limiter')->clear();
     }
 
     private function createUser(): void
