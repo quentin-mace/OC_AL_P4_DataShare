@@ -12,7 +12,7 @@ use Symfony\Component\Validator\Constraint;
 #[\Attribute(\Attribute::TARGET_PROPERTY)]
 class AuthenticatedOnly extends Constraint
 {
-    public string $message = 'Ce champ est reserve aux comptes connectes.';
+    public string $message = 'This field is reserved for signed-in accounts.';
 
     /**
      * Symfony 8 dropped the option-array normalisation, so the inherited

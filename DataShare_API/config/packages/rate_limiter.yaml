@@ -1,0 +1,20 @@
+# Throttles the download password attempts of POST /api/downloads/{downloadToken}.
+# The thresholds live here rather than in .env, like the login_throttling ones in
+# security.yaml: they are product security rules, not infrastructure settings.
+framework:
+    rate_limiter:
+        # The secret being attacked is the link's own password, so the link is
+        # what has to be counted, whatever the attempts originate from. Keying
+        # on the link plus the IP address, as the login does, would let anyone
+        # start over by rotating addresses.
+        download_password_link:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '15 minutes'
+
+        # Second counter, five times wider, for a client sweeping many links at
+        # once. Same ratio as the global counter of login_throttling.
+        download_password_client:
+            policy: 'fixed_window'
+            limit: 25
+            interval: '15 minutes'

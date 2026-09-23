@@ -45,7 +45,7 @@ final readonly class FileTagProvider implements ProviderInterface
         $file = is_numeric($id) ? $this->fileRepository->find((int) $id) : null;
 
         if (!$file instanceof File) {
-            throw new NotFoundHttpException('Ce fichier n\'existe pas.');
+            throw new NotFoundHttpException('This file does not exist.');
         }
 
         return $file;

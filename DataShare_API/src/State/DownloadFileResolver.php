@@ -28,7 +28,7 @@ final readonly class DownloadFileResolver
         $file = $this->fileRepository->findOneBy(['downloadToken' => $downloadToken]);
 
         if (!$file instanceof File || $file->getExpirationDate() < new \DateTimeImmutable()) {
-            throw new GoneHttpException('Ce lien de telechargement est invalide ou a expire.');
+            throw new GoneHttpException('This download link is invalid or has expired.');
         }
 
         return $file;

@@ -50,7 +50,7 @@ final readonly class FileTagRemoveProcessor implements ProcessorInterface
         if (null === $tag) {
             // See FileTagRenameProcessor: raising this in the provider would
             // leak the tags of other accounts' files.
-            throw new NotFoundHttpException(sprintf('Le tag "%s" n\'est pas associe a ce fichier.', $tagName));
+            throw new NotFoundHttpException(sprintf('The "%s" tag is not on this file.', $tagName));
         }
 
         $file->detachTag($tag);

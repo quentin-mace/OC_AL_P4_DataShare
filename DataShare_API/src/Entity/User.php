@@ -20,7 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
-#[UniqueEntity(fields: ['email'], message: 'Un compte existe deja avec cette adresse email.')]
+#[UniqueEntity(fields: ['email'], message: 'An account already exists with this email address.')]
 #[ApiResource(
     operations: [
         // Creating a user is registering: the URL says so, rather than exposing
@@ -72,7 +72,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * Length alone says nothing about how guessable a password is, so
      * PasswordStrength scores its entropy from length and character variety.
      */
-    #[ApiProperty(description: 'Mot de passe en clair, 16 caracteres minimum, robustesse moyenne exigee.')]
+    #[ApiProperty(description: 'Plain password, 16 characters minimum, medium strength required.')]
     #[Groups(['user:write'])]
     #[Assert\NotBlank]
     #[Assert\Length(min: 16, max: 4096)]

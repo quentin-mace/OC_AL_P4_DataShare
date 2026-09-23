@@ -17,7 +17,7 @@ final class TagInput
      * Trimmed before validating, to match UserFilesProvider::tagFilter() which
      * already trims the history filter; the processors trim before resolving.
      */
-    #[Assert\NotBlank(message: 'Un tag est requis.', normalizer: 'trim')]
+    #[Assert\NotBlank(message: 'A tag is required.', normalizer: 'trim')]
     #[Assert\Length(max: 30, normalizer: 'trim')]
     public ?string $tag = null;
 }
