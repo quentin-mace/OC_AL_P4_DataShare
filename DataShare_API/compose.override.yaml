@@ -14,7 +14,9 @@ services:
     ports:
       - "8080:80"
 
-  minio:
+  # L'API S3 seule, et sur la boucle locale uniquement : la passerelle S3
+  # sert ici sans verifier les identifiants (voir tech_stack.md), le bucket
+  # n'a donc rien a faire sur les autres interfaces du poste.
+  storage:
     ports:
-      - "9000:9000" # API S3
-      - "9001:9001" # console web
+      - "127.0.0.1:8333:8333"

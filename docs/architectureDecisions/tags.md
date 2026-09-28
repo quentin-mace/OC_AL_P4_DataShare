@@ -60,6 +60,8 @@ Le mécanisme existait déjà : `User::$tags` est une collection en `orphanRemov
 
 Un tag vide ne rend service à personne. Il ne ramènerait aucun résultat dans le filtre de l'historique, et polluerait la liste de suggestions le jour où le front en proposera une.
 
+La règle vaut pour tout ce qui retire un tag à un fichier, y compris la suppression du fichier lui-même ([#63](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/63)). C'est la précision qui manquait ici, et l'omission était invisible : supprimer un fichier vide la table de jointure, par la relation propriétaire comme par la clé étrangère en cascade, sans rien dire à la table `tag`. La ligne survivait donc à son dernier fichier, sans qu'aucune route ne puisse plus l'atteindre. `FileDeleteProcessor` détache désormais les tags du fichier avant de déléguer à Doctrine, ce qui ramène ce chemin sur `File::detachTag()`, le même que celui des deux routes de tags.
+
 ### Alternatives évaluées
 
 | Option | Raison de l'écarter |
