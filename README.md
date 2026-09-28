@@ -3,7 +3,7 @@ Meta projet pour piloter le développement du projet "Data Share" pour le cours 
 
 ## Backend (DataShare_API)
 
-Stack : Symfony 8 + API Platform, PostgreSQL, MinIO (S3). Tout tourne via Docker, seul Docker Compose est nécessaire en local.
+Stack : Symfony 8 + API Platform, PostgreSQL, SeaweedFS (S3). Tout tourne via Docker, seul Docker Compose est nécessaire en local.
 
 ### Démarrer
 
@@ -13,7 +13,7 @@ make init   # dépendances, clés JWT, démarrage de la stack et migrations
 ```
 
 - API : http://localhost:8080 (doc interactive sur `/api`)
-- Console MinIO : http://localhost:9001 (`minioadmin` / voir `.env`)
+- Stockage S3 : http://localhost:8333 (pas de console web, s'inspecte à l'AWS CLI ou depuis un client S3)
 - Adminer (base de données) : http://localhost:8081 — système PostgreSQL, serveur `database` (pré-rempli), utilisateur/mot de passe/base dans `DataShare_API/.env` (`app` / `!ChangeMe!` / `app` par défaut)
 
 Ensuite, `make up` et `make down` suffisent au quotidien.

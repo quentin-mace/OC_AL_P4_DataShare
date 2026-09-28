@@ -2,7 +2,7 @@
 
 # Prefixe pour executer une commande dans le conteneur php : reutilise le
 # conteneur en cours si la stack est demarree, sinon en cree un jetable. Les
-# cibles fonctionnent donc dans les deux cas, sans relancer minio-init a chaque
+# cibles fonctionnent donc dans les deux cas, sans relancer storage-init a chaque
 # fois quand l'application tourne deja. Variable a expansion tardive (=), donc
 # reevaluee a chaque cible : dans "make init", "install" passe par run et
 # "migrate", execute apres "up", passe par exec.
@@ -28,7 +28,7 @@ migration: ## Genere une migration depuis les entites
 schema: ## Verifie que les entites et le schema de la base concordent
 	$(DC) php bin/console doctrine:schema:validate
 
-up: ## Demarre l'application (API sur :8080, MinIO sur :9001)
+up: ## Demarre l'application (API sur :8080, stockage S3 sur :8333)
 	docker compose up -d
 
 down: ## Arrete l'application

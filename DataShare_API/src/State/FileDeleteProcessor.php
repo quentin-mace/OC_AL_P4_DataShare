@@ -42,7 +42,7 @@ final readonly class FileDeleteProcessor implements ProcessorInterface
         // Object first, row second, the same order the upload uses. Should the
         // flush fail, the row is left pointing at a deleted object: the file
         // still shows up in the history and the user can simply delete it
-        // again. The other order would leave an object in MinIO that nothing
+        // again. The other order would leave an object in the storage that nothing
         // references anymore, so nothing could ever reclaim it.
         //
         // A missing object is not an error: the S3 API answers 204 on an
