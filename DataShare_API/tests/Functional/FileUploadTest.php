@@ -34,7 +34,7 @@ final class FileUploadTest extends WebTestCase
 
     /**
      * dama/doctrine-test-bundle rolls the database back, but not the objects
-     * this test wrote to the real MinIO started alongside the app.
+     * this test wrote to the object storage started alongside the app.
      */
     protected function tearDown(): void
     {

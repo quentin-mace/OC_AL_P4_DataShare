@@ -62,7 +62,7 @@ Codes de réponse propres à ces trois routes : 401 sans jeton ou avec un jeton 
 | GET | /api/downloads/{downloadToken} | US02 | non | aucun | 200 `{ name, size, mimeType, expiresAt, hasPassword }` ; 410 si lien expiré ou invalide |
 | POST | /api/downloads/{downloadToken} | US02, US09 | non | `{ password? }` (requis si `hasPassword` = true) | 200 `{ presignedUrl, expiresIn }` ; 401 si mot de passe invalide ; 429 au-delà de cinq échecs ; 410 si lien expiré ou invalide |
 
-Le fichier n'est jamais servi directement par l'API : la route de téléchargement ne fait que vérifier l'expiration et le mot de passe, puis renvoie une URL présignée MinIO/S3 à durée de vie courte (voir tech_stack.md, section "Transit des fichiers").
+Le fichier n'est jamais servi directement par l'API : la route de téléchargement ne fait que vérifier l'expiration et le mot de passe, puis renvoie une URL présignée S3 à durée de vie courte (voir tech_stack.md, section "Transit des fichiers").
 
 Au-delà de cinq mots de passe faux en quinze minutes, la route renvoie 429 pour ce lien, y compris si le bon mot de passe est finalement présenté : le blocage est constaté avant toute comparaison. Seuls les échecs sont comptés, et un mot de passe juste remet le compteur du lien à zéro. Un second compteur, cinq fois plus large, s'applique par adresse IP et vise le client qui balaie plusieurs liens. La réponse porte un en-tête `Retry-After` indiquant en secondes le délai avant la prochaine tentative.
 

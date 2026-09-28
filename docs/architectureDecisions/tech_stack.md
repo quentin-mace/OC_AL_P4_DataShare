@@ -86,6 +86,55 @@ Le risque réel de l'absence de correctifs de sécurité est faible sur le péri
 
 L'application n'appelle jamais MinIO. Elle s'adresse à Flysystem, qui s'adresse à l'API S3. Remplacer l'implémentation revient à renseigner d'autres valeurs de `STORAGE_S3_*`, sans qu'aucune ligne de code applicatif soit concernée. La disparition de la brique retenue laisse donc le projet intact, ce qui est exactement l'effet recherché par la décision de stockage du #1.
 
+## Remplacement de MinIO par SeaweedFS
+
+**Statut** : accepté, 2026-09-28, ticket [#65](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/65)
+
+Le coût de sortie évalué au #8 est appelé cinq mois plus tard, et par une voie qui n'avait pas été anticipée. La décision de conserver MinIO reposait sur la disponibilité des images déjà publiées, l'arrêt de publication d'octobre 2025 ne portant que sur les nouvelles. Ces images ont maintenant disparu des registres.
+
+La CI l'a signalé la première, sur un ticket qui ne touchait pas à l'infrastructure :
+
+```
+minio Error unauthorized: access to the requested resource is not authorized
+```
+
+| Registre | Réponse au manifest | Témoin de contrôle |
+|---|---|---|
+| `quay.io/minio/minio` | 401 | `quay.io/prometheus/prometheus` répond 200 |
+| `docker.io/minio/minio` | 401 | `library/alpine` répond 200 |
+| `ghcr.io/minio/minio` | 403 | |
+
+Ni un quota d'appels, ni un tag erroné : les dépôts sont fermés. Le dernier build vert date du 23 septembre, le premier échec du 28. Les images ne survivent plus que dans les caches Docker des postes qui les avaient déjà tirées, ce qui ne se transmet ni à un nouvel arrivant, ni à un runner.
+
+**Décision** : remplacer MinIO par SeaweedFS, `chrislusf/seaweedfs:4.47`, en développement comme en CI.
+
+Le service `storage` démarre en `server -s3`, qui réunit master, volume, filer et passerelle S3 dans un seul processus. Le conteneur `storage-init` crée le bucket au premier démarrage, rôle que tenait `mc` : la structure du `compose.yaml` est celle d'avant, le nom des services près.
+
+### Alternatives évaluées
+
+Le critère a changé depuis le #8. Il ne s'agit plus de choisir la brique la plus confortable, mais celle qui ne disparaîtra pas une seconde fois : licence libre, éditeur qui ne dépend pas de la conversion des utilisateurs de l'édition gratuite, images publiques.
+
+| Option | Raison de l'écarter |
+|---|---|
+| LocalStack | Premier choix, abandonné après essai. L'édition communautaire a été supprimée à la version 2026.03, en mars 2026, et l'image renvoie désormais un défaut d'activation de licence, y compris avec `ACTIVATE_PRO=0`. Le tag dédié à S3 affiche au démarrage une invitation à passer sur `localstack-pro`. Exactement le scénario dont on cherche à sortir. |
+| Miroir des images MinIO sur GHCR | Repousse le problème sans le traiter : fige une brique archivée, sans correctif de sécurité, et transfère au projet la charge du miroir. |
+| `adobe/s3mock` | Démarre, mais a refusé l'envoi d'objet dans la configuration essayée. Reste un simulateur destiné aux tests unitaires, là où le besoin couvre aussi l'usage manuel en développement. |
+| Garage | Candidat crédible et libre, écarté sur la configuration : fichier de configuration dédié et initialisation d'un layout de cluster, pour un service qui doit rester un conteneur qu'on démarre et qu'on oublie. |
+
+Le choix s'est fait sur essai, et non sur documentation : pour chaque candidat, création du bucket, envoi d'un objet, génération d'une URL présignée, puis appel HTTP de cette URL. SeaweedFS est le seul à avoir servi les quatre étapes, la dernière en 200 avec le contenu attendu. C'est la vérification qui compte ici, l'URL présignée étant le seul point où le stockage est exposé au navigateur.
+
+### Ce qui change, et ce qui ne change pas
+
+Aucune ligne de code applicatif, conformément à la promesse du #1. Les modifications tiennent dans `compose.yaml`, `compose.override.yaml` et deux variables de `.env` : le port passe de 9000 à 8333 et le nom d'hôte de `minio` à `storage`.
+
+Le service est nommé `storage` et non `seaweedfs`. La leçon de ce ticket est que l'implémentation change plus souvent que le rôle ; le prochain remplacement ne devrait pas avoir à traverser le `compose.yaml`, le `Makefile` et les commentaires de test comme celui-ci l'a fait.
+
+### Points de vigilance
+
+- **La console web disparaît.** MinIO en offrait une sur le port 9001, SeaweedFS n'a pas d'équivalent pour inspecter un bucket. L'AWS CLI ou n'importe quel client S3 remplit ce rôle, avec une étape de plus qu'un navigateur.
+- **La passerelle S3 ne vérifie pas les identifiants dans cette configuration.** N'importe quelle paire de clés est acceptée, `STORAGE_S3_KEY` et `STORAGE_S3_SECRET` ne servant plus qu'à ce que le client puisse signer ses requêtes. Le port n'est donc publié que sur la boucle locale, `127.0.0.1:8333`, là où MinIO écoutait sur toutes les interfaces du poste. Une configuration d'identités S3 est possible le jour où ce stockage servirait ailleurs qu'en développement.
+- **Le test de bonne santé vise `127.0.0.1` et non `localhost`.** Le conteneur résout d'abord ce nom en IPv6, sur laquelle la passerelle n'écoute pas, et le service resterait éternellement marqué défaillant. Le piège a coûté un démarrage complet avant d'être compris.
+
 ## Politique de mot de passe des comptes
 
 **Statut** : accepté, 2026-09-10, ticket [#32](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/32)

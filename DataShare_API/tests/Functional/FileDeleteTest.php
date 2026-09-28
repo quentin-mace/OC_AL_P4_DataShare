@@ -38,7 +38,7 @@ final class FileDeleteTest extends WebTestCase
 
     /**
      * dama/doctrine-test-bundle rolls the database back, but not the objects
-     * this test wrote to the real MinIO started alongside the app. Objects the
+     * this test wrote to the object storage started alongside the app. Objects the
      * tested route already deleted are skipped.
      */
     protected function tearDown(): void
@@ -83,7 +83,7 @@ final class FileDeleteTest extends WebTestCase
         self::assertResponseStatusCodeSame(204);
         self::assertEmpty($this->client->getResponse()->getContent());
         self::assertNull($this->findFile((int) $file['id']), 'The metadata must be gone from the database.');
-        self::assertFalse($this->storage()->fileExists($storageKey), 'The object must be gone from MinIO.');
+        self::assertFalse($this->storage()->fileExists($storageKey), 'The object must be gone from the storage.');
     }
 
     /**
