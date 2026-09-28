@@ -9,8 +9,8 @@ use League\Flysystem\FilesystemOperator;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Removes the stored object, then hands the entity over to the regular Doctrine
- * remove processor.
+ * Removes the stored object and the tags no other file carries, then hands the
+ * entity over to the regular Doctrine remove processor.
  *
  * @implements ProcessorInterface<File, void>
  */
@@ -50,6 +50,16 @@ final readonly class FileDeleteProcessor implements ProcessorInterface
         // whose object the automatic purge (US10) already removed while
         // keeping its history row.
         $this->storage->delete($storageKey);
+
+        // Removing the file empties the join table, but says nothing to the tag
+        // table: a tag its last file just dropped would survive as a row no
+        // route can ever reach again. detachTag() removes it from its owner,
+        // whose $tags collection is orphanRemoval, so the flush below deletes
+        // it. Iterating over a copy, since detachTag() empties the collection
+        // as it goes.
+        foreach ($data->getTags()->toArray() as $tag) {
+            $data->detachTag($tag);
+        }
 
         $this->removeProcessor->process($data, $operation, $uriVariables, $context);
     }

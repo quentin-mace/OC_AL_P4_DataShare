@@ -5,6 +5,7 @@ namespace App\Tests\Functional;
 use App\Entity\File;
 use App\Entity\User;
 use App\Repository\FileRepository;
+use App\Repository\TagRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -84,6 +85,32 @@ final class FileDeleteTest extends WebTestCase
         self::assertEmpty($this->client->getResponse()->getContent());
         self::assertNull($this->findFile((int) $file['id']), 'The metadata must be gone from the database.');
         self::assertFalse($this->storage()->fileExists($storageKey), 'The object must be gone from MinIO.');
+    }
+
+    /**
+     * A tag only exists through the files that carry it, on this route as on
+     * DELETE /api/files/{id}/tags/{tag}.
+     */
+    public function testItDeletesATagTheLastFileCarryingItTakesAway(): void
+    {
+        $file = $this->uploadFile($this->owner, 'rapport.pdf', ['tags' => ['facture']]);
+        self::assertSame(1, $this->countTagsOf($this->owner));
+
+        $this->delete((int) $file['id'], $this->token($this->owner));
+
+        self::assertResponseStatusCodeSame(204);
+        self::assertSame(0, $this->countTagsOf($this->owner), 'An empty tag serves nobody.');
+    }
+
+    public function testItKeepsATagAnotherFileStillCarries(): void
+    {
+        $deleted = $this->uploadFile($this->owner, 'rapport.pdf', ['tags' => ['facture']]);
+        $this->uploadFile($this->owner, 'facture-02.pdf', ['tags' => ['facture']]);
+
+        $this->delete((int) $deleted['id'], $this->token($this->owner));
+
+        self::assertResponseStatusCodeSame(204);
+        self::assertSame(1, $this->countTagsOf($this->owner), 'The other file still needs it.');
     }
 
     /**
@@ -196,6 +223,13 @@ final class FileDeleteTest extends WebTestCase
         self::assertInstanceOf(File::class, $file);
 
         return (string) $file->getStorageKey();
+    }
+
+    private function countTagsOf(User $user): int
+    {
+        $this->entityManager()->clear();
+
+        return static::getContainer()->get(TagRepository::class)->count(['owner' => $user->getId()]);
     }
 
     private function findFile(int $id): ?File
