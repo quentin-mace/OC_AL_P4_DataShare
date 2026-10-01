@@ -29,6 +29,7 @@ React n'impose rien, donc le stack front est défini par ce qui l'entoure. Ces c
 | Styles | Tailwind CSS, les maquettes existent en desktop et mobile, le responsive tient dans un préfixe de classe         |
 | État serveur | aucune bibliothèque, un seul écran concerné, TanStack Query serait surdimensionné                                |
 | État global (client) | zustand, pour partager l'état d'authentification (utilisateur, token) entre les pages sans prop drilling ni Context API verbeux |
+| Lint et formatage | oxlint pour le lint, Prettier pour le formatage, voir la section dédiée plus bas |
 
 ## Transit des fichiers
 
@@ -155,6 +156,27 @@ La contrainte est écartée pour une raison d'architecture, pas de sécurité : 
 
 - La règle est appliquée côté serveur, seul endroit qui fasse foi. Le formulaire front la reproduit en zod pour afficher l'erreur avant l'envoi, sans jamais s'y substituer.
 - L'écart avec les huit caractères des spécifications est assumé et documenté ici, il est à mentionner dans `SECURITY.md`.
+
+## Linter du front-end
+
+**Statut** : accepté, 2026-10-01, ticket [#6](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/6)
+
+Le template `react-ts` de create-vite (9.2.1) ne propose plus ESLint, il génère directement une configuration oxlint. La question n'était donc pas d'ajouter un outil, mais de garder celui fourni ou de revenir à ESLint.
+
+**Décision** : conserver oxlint, avec les plugins `react`, `typescript`, `oxc` et `jsx-a11y`. Le formatage est confié à Prettier, oxlint ne s'en chargeant pas.
+
+- **Coût nul à l'installation.** C'est la configuration par défaut du template, rien à ajouter ni à maintenir pour démarrer.
+- **Couverture suffisante.** Les règles des hooks React, de TypeScript et d'accessibilité (`jsx-a11y`) sont intégrées, sans dépendance supplémentaire. Ce dernier point répond directement au point de vigilance sur l'accessibilité, React n'offrant aucun garde-fou.
+- **Rapidité.** Écrit en Rust, il s'exécute en une fraction de seconde sur le projet, en local comme en CI.
+
+### Alternative évaluée
+
+ESLint reste la référence de l'écosystème, avec le catalogue de plugins le plus large et des règles exploitant les types TypeScript. Aucun de ces deux avantages n'est utile ici : les plugins nécessaires existent dans oxlint, et la vérification des types est déjà assurée par `tsc -b`, lancé à chaque build.
+
+### Conséquences
+
+- Une règle propre à un plugin ESLint absent d'oxlint ne serait pas disponible. Le retour à ESLint resterait peu coûteux, la configuration tenant dans un seul fichier, `.oxlintrc.json`.
+- Le lint ne remplace pas le contrôle des types : `npm run build` (donc `tsc -b`) doit tourner en CI à côté de `npm run lint`.
 
 ## Autres décisions
 
