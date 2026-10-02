@@ -1,0 +1,13 @@
+# Point d'entree unique : demarre le back et le front depuis la racine. Chaque
+# projet garde son propre compose.yaml et se lance aussi seul depuis son dossier.
+#
+# Le nom de projet reprend celui que Compose donne au back lance seul : les
+# volumes (base, stockage) sont prefixes par ce nom, un autre nom demarrerait
+# donc sur une base et un bucket vides.
+name: datashare_api
+
+include:
+  - path:
+      - DataShare_API/compose.yaml
+      - DataShare_API/compose.override.yaml
+  - path: DataShare_Front/compose.yaml

@@ -29,6 +29,7 @@ React n'impose rien, donc le stack front est défini par ce qui l'entoure. Ces c
 | Styles | Tailwind CSS, les maquettes existent en desktop et mobile, le responsive tient dans un préfixe de classe         |
 | État serveur | aucune bibliothèque, un seul écran concerné, TanStack Query serait surdimensionné                                |
 | État global (client) | zustand, pour partager l'état d'authentification (utilisateur, token) entre les pages sans prop drilling ni Context API verbeux |
+| Lint et formatage | oxlint pour le lint, Prettier pour le formatage, voir la section dédiée plus bas |
 
 ## Transit des fichiers
 
@@ -155,6 +156,52 @@ La contrainte est écartée pour une raison d'architecture, pas de sécurité : 
 
 - La règle est appliquée côté serveur, seul endroit qui fasse foi. Le formulaire front la reproduit en zod pour afficher l'erreur avant l'envoi, sans jamais s'y substituer.
 - L'écart avec les huit caractères des spécifications est assumé et documenté ici, il est à mentionner dans `SECURITY.md`.
+
+## Linter du front-end
+
+**Statut** : accepté, 2026-10-01, ticket [#6](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/6)
+
+Le template `react-ts` de create-vite (9.2.1) ne propose plus ESLint, il génère directement une configuration oxlint. La question n'était donc pas d'ajouter un outil, mais de garder celui fourni ou de revenir à ESLint.
+
+**Décision** : conserver oxlint, avec les plugins `react`, `typescript`, `oxc` et `jsx-a11y`. Le formatage est confié à Prettier, oxlint ne s'en chargeant pas.
+
+- **Coût nul à l'installation.** C'est la configuration par défaut du template, rien à ajouter ni à maintenir pour démarrer.
+- **Couverture suffisante.** Les règles des hooks React, de TypeScript et d'accessibilité (`jsx-a11y`) sont intégrées, sans dépendance supplémentaire. Ce dernier point répond directement au point de vigilance sur l'accessibilité, React n'offrant aucun garde-fou.
+- **Rapidité.** Écrit en Rust, il s'exécute en une fraction de seconde sur le projet, en local comme en CI.
+
+### Alternative évaluée
+
+ESLint reste la référence de l'écosystème, avec le catalogue de plugins le plus large et des règles exploitant les types TypeScript. Aucun de ces deux avantages n'est utile ici : les plugins nécessaires existent dans oxlint, et la vérification des types est déjà assurée par `tsc -b`, lancé à chaque build.
+
+### Conséquences
+
+- Une règle propre à un plugin ESLint absent d'oxlint ne serait pas disponible. Le retour à ESLint resterait peu coûteux, la configuration tenant dans un seul fichier, `.oxlintrc.json`.
+- Le lint ne remplace pas le contrôle des types : `npm run build` (donc `tsc -b`) doit tourner en CI à côté de `npm run lint`.
+
+## Front-end en conteneur de développement
+
+**Statut** : accepté, 2026-10-02, ticket [#6](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/6)
+
+**Décision** : le serveur de dev Vite tourne dans un conteneur, comme le back, pour que Docker Compose reste le seul prérequis local. `DataShare_Front/` a son propre `compose.yaml` et son `Makefile`, sur le modèle de `DataShare_API/`. Un `compose.yaml` à la racine inclut les deux, ce qui permet de tout démarrer en une commande, chaque projet restant lançable seul.
+
+- **`node_modules` dans un volume nommé**, distinct de celui de l'hôte. Vite, oxlint et Tailwind embarquent des binaires natifs propres à chaque système : un dossier partagé entre l'hôte et le conteneur casserait l'un des deux. L'IDE garde le `node_modules` de l'hôte.
+- **Utilisateur `node` (uid 1000)**, et non root, pour que les fichiers écrits dans le dépôt (`package-lock.json`) appartiennent au développeur.
+- **Nom de projet `datashare_api` à la racine.** C'est celui que Compose donne au back lancé seul, et le préfixe de ses volumes. Un autre nom ferait démarrer la stack complète sur une base et un bucket vides.
+- **Port publié sur `127.0.0.1` seulement**, comme le stockage S3. Le navigateur appelle l'API directement sur `localhost:8080`, que le CORS du back accepte déjà : le front n'a pas besoin de joindre le back par le réseau Docker.
+
+### Alternatives évaluées
+
+| Option | Raison de l'écarter |
+|---|---|
+| Node en local, sans conteneur | Plus rapide à mettre en place, mais ajoute Node aux prérequis et casse la symétrie avec le back. |
+| Service front dans le `compose.yaml` du back | Un seul fichier, mais le back porterait la configuration du front. |
+| Image Alpine | Plus légère, mais musl rend les binaires natifs différents de ceux de l'hôte (glibc), une source d'écarts inutile. `node:22-slim` est retenue. |
+
+### Conséquences
+
+- Le volume `node_modules` est vide au premier lancement : `make init` installe les dépendances avant tout le reste.
+- Front lancé seul et stack lancée depuis la racine utilisent deux volumes `node_modules` distincts, et ne doivent pas tourner en même temps, le port 5173 étant commun.
+- Ce conteneur ne sert qu'au développement. L'image de production (build statique servi par un serveur web) relève du [#23](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/23).
 
 ## Autres décisions
 

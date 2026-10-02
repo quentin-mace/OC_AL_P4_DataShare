@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens de design relevés sur les maquettes (docs/mockUp), au pixel.
+ * Noms sémantiques : le rôle de la couleur, pas sa teinte, pour qu'un
+ * changement de charte ne demande pas de renommer les classes.
+ */
+@theme {
+  --font-sans: 'DM Sans Variable', ui-sans-serif, system-ui, sans-serif;
+
+  /* Dégradé de fond des pages publiques et de la sidebar. */
+  --color-brand-from: #ffb88c;
+  --color-brand-to: #de6262;
+
+  /* Texte. */
+  --color-ink: #000000;
+  --color-ink-muted: #1e1e1e;
+  --color-placeholder: #b3b3b3;
+
+  /* Boutons pleins sombres (header, "Ajouter des fichiers") et bouton d'upload de l'accueil. */
+  --color-dark: #2c2c2c;
+  --color-upload: #100218;
+
+  /* Accent orange : liens, boutons teintés et fantômes. */
+  --color-accent: #e27f29;
+  --color-accent-strong: #ba681f;
+  --color-accent-soft: #ffefe4;
+  --color-accent-border: #eab491;
+
+  /* Onglet actif du Switch. */
+  --color-coral: #e77a6e;
+
+  /* Surfaces. */
+  --color-surface: #ffffff;
+  --color-canvas: #fff8f3;
+  --color-canvas-strong: #ffeee3;
+  --color-row: #fff5ee;
+  --color-row-border: #fcece0;
+  --color-line: #dedede;
+
+  /* États. */
+  --color-disabled: #ebe6e3;
+  --color-disabled-ink: #aea49b;
+  --color-danger: #ca2d2d;
+
+  /* Callouts. */
+  --color-info-soft: #e2ecff;
+  --color-info-border: #bfd3f7;
+  --color-info-ink: #2a3f72;
+  --color-warning-soft: #fff5ed;
+  --color-warning-border: #e9d0bc;
+  --color-warning-ink: #aa642b;
+  --color-error-soft: #ffe2e2;
+  --color-error-border: #edb1b1;
+  --color-error-ink: #9c3333;
+
+  /* Formes. */
+  --radius-control: 6px;
+  --radius-card: 12px;
+  --shadow-card: 0 4px 16px rgb(0 0 0 / 0.08);
+}
+
+@layer base {
+  body {
+    @apply bg-canvas font-sans text-ink-muted antialiased;
+  }
+}
