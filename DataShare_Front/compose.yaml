@@ -1,0 +1,15 @@
+services:
+  front:
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
+    volumes:
+      - ./:/srv/app
+      - node_modules:/srv/app/node_modules
+    # Sur la boucle locale uniquement, comme le stockage S3 du back : le serveur
+    # de dev n'a rien a faire sur les autres interfaces du poste.
+    ports:
+      - '127.0.0.1:5173:5173'
+
+volumes:
+  node_modules:
