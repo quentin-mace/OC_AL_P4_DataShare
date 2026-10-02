@@ -1,4 +1,4 @@
-import { cx } from './cx'
+import { joinClassNames } from './joinClassNames'
 
 export type ButtonVariant = 'tinted' | 'outline' | 'ghost' | 'dark'
 export type ButtonSize = 'sm' | 'md'
@@ -34,7 +34,7 @@ export function buttonStyles({
   size = 'md',
   fullWidth = false,
 }: ButtonStyleOptions = {}): string {
-  return cx(
+  return joinClassNames(
     'inline-flex items-center justify-center rounded-control border font-medium transition',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     'disabled:cursor-not-allowed',

@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { buttonStyles, type ButtonStyleOptions } from './buttonStyles'
-import { cx } from './cx'
+import { joinClassNames } from './joinClassNames'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, ButtonStyleOptions {
   leadingIcon?: ReactNode
@@ -22,7 +22,7 @@ export function Button({
     // type="button" par défaut : dans un formulaire, un bouton sans type le soumet.
     <button
       type={type}
-      className={cx(buttonStyles({ variant, size, fullWidth }), className)}
+      className={joinClassNames(buttonStyles({ variant, size, fullWidth }), className)}
       {...props}
     >
       {leadingIcon && <span aria-hidden="true">{leadingIcon}</span>}

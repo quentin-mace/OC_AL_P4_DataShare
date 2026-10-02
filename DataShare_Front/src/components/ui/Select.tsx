@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import { useId, type Ref, type SelectHTMLAttributes } from 'react'
-import { cx } from './cx'
+import { joinClassNames } from './joinClassNames'
 import { errorStyles, fieldStyles, labelStyles } from './fieldStyles'
 
 export interface SelectOption {
@@ -31,7 +31,7 @@ export function Select({ label, options, error, id, className, ...props }: Selec
           id={selectId}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={cx(
+          className={joinClassNames(
             fieldStyles,
             'appearance-none pr-8',
             error ? 'border-danger' : 'border-line',

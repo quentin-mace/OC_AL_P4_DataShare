@@ -1,6 +1,6 @@
 import { CircleAlert, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { cx } from './cx'
+import { joinClassNames } from './joinClassNames'
 
 export type CalloutVariant = 'info' | 'warning' | 'error'
 
@@ -26,7 +26,7 @@ export function Callout({ variant = 'info', children, className }: CalloutProps)
     // Une erreur est annoncée immédiatement, une information à la prochaine pause.
     <div
       role={variant === 'error' ? 'alert' : 'status'}
-      className={cx(
+      className={joinClassNames(
         'flex items-center gap-2 rounded-control border px-2.5 py-1.5 text-xs',
         variantClassName,
         className,

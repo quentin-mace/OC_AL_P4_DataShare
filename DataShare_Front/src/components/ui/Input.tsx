@@ -1,5 +1,5 @@
 import { useId, type InputHTMLAttributes, type Ref } from 'react'
-import { cx } from './cx'
+import { joinClassNames } from './joinClassNames'
 import { errorStyles, fieldStyles, labelStyles } from './fieldStyles'
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -23,7 +23,7 @@ export function Input({ label, error, id, className, ...props }: InputProps) {
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
-        className={cx(fieldStyles, error ? 'border-danger' : 'border-line')}
+        className={joinClassNames(fieldStyles, error ? 'border-danger' : 'border-line')}
         {...props}
       />
       {error && (
