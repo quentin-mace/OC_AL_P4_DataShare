@@ -1,9 +1,8 @@
+import { RouterProvider } from 'react-router/dom'
+import { router } from './routes/router'
+
 function App() {
-  return (
-    <div className="min-h-screen bg-linear-to-b from-brand-from to-brand-to p-8">
-      <h1 className="text-2xl font-bold text-ink">DataShare</h1>
-    </div>
-  )
+  return <RouterProvider router={router} />
 }
 
 export default App
