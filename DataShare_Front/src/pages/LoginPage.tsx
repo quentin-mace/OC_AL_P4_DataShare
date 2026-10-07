@@ -37,8 +37,9 @@ export function LoginPage() {
   const sessionExpired = useAuthStore((auth) => auth.sessionExpired)
   const storeToken = useAuthStore((auth) => auth.login)
   const [formError, setFormError] = useState<string | null>(null)
-  // Le message d'inscription n'a plus lieu d'être une fois une tentative échouée.
-  const [showRegistered, setShowRegistered] = useState(Boolean(state?.registered))
+  // Les messages d'accueil (compte créé, session expirée) n'ont plus lieu
+  // d'être une fois une tentative échouée : seule l'erreur reste affichée.
+  const [attemptFailed, setAttemptFailed] = useState(false)
   const {
     register,
     handleSubmit,
@@ -59,7 +60,7 @@ export function LoginPage() {
     try {
       storeToken(await login(credentials))
     } catch (error) {
-      setShowRegistered(false)
+      setAttemptFailed(true)
       setFormError(messageFor(getStatus(error)))
     }
   }
@@ -67,10 +68,10 @@ export function LoginPage() {
   return (
     <section className="w-full max-w-md rounded-card bg-surface p-6 shadow-card">
       <h1 className="mb-4 text-center text-xl font-bold text-ink">Connexion</h1>
-      {showRegistered && (
+      {state?.registered && !attemptFailed && (
         <Callout className="mb-4">Compte créé, vous pouvez vous connecter.</Callout>
       )}
-      {sessionExpired && (
+      {sessionExpired && !attemptFailed && (
         <Callout className="mb-4">Votre session a expiré, reconnectez-vous.</Callout>
       )}
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">

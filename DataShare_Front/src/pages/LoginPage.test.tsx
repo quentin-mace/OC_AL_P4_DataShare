@@ -113,6 +113,18 @@ describe('LoginPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Compte créé, vous pouvez vous connecter.')
   })
 
+  it('drops the session expiry notice once an attempt fails', async () => {
+    reply = { status: 401, data: {} }
+    useAuthStore.setState({ sessionExpired: true })
+    renderLoginPage()
+    await fillForm()
+
+    await submit()
+
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   it('drops the account creation notice once an attempt fails', async () => {
     reply = { status: 401, data: {} }
     renderLoginPage({ registered: true })
