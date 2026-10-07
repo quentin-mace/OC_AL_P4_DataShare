@@ -165,6 +165,25 @@ Composant contrôlé : l'état vit dans la page. Le `label` n'est pas affiché m
 
 `<Header isAuthenticated={...} />` affiche "Se connecter" à un visiteur et "Mon espace" à un utilisateur connecté. Il est déjà inclus dans `PublicLayout`, une page n'a pas à l'ajouter.
 
+## Formulaires
+
+Un formulaire associe un schéma zod (`src/validation/`) à react-hook-form, comme `RegisterPage` :
+
+```tsx
+const { register, handleSubmit, setError, formState: { errors, isSubmitting } } =
+  useForm<RegisterFormInput, unknown, RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    mode: 'onTouched',
+  })
+```
+
+- **Le schéma reproduit les contraintes du back, sans s'y substituer.** Il évite un aller-retour, la validation serveur reste seule à faire foi. Une règle portée du back cite sa source (ex. `validation/passwordStrength.ts`, portage de `PasswordStrength`).
+- **`mode: 'onTouched'`.** Un champ n'est jugé qu'après avoir été quitté une première fois, puis à chaque frappe. L'utilisateur n'est pas interrompu pendant sa première saisie.
+- **Messages en français, écrits par le front.** Les messages de l'API sont en anglais : on ne les affiche jamais tels quels.
+- **Erreurs serveur.** `getViolations(error)` (`src/api/problem.ts`) renvoie les `violations` d'un 422, `null` sinon. Chaque violation passe par `setError(propertyPath, ...)`, avec un libellé choisi d'après son `code` (code de la contrainte Symfony) ou, à défaut, d'après le champ. Toute autre erreur (réseau, 5xx) s'affiche dans un `Callout variant="error"` au-dessus du bouton.
+- `noValidate` sur le `<form>` : la validation native du navigateur ferait doublon avec zod, et avec d'autres messages.
+- `autoComplete` renseigné sur chaque champ (`email`, `given-name`, `new-password`...) pour les gestionnaires de mots de passe.
+
 ## Icônes
 
 Jeu **Lucide** (`lucide-react`), celui que les maquettes reprennent. Chaque icône s'importe seule, seules celles utilisées partent dans le bundle.
