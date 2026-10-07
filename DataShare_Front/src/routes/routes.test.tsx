@@ -72,4 +72,11 @@ describe('routes', () => {
       'Votre session a expiré, reconnectez-vous.',
     )
   })
+
+  it('offers a logged-in user their space from the public pages', () => {
+    useAuthStore.setState({ token: fakeToken(3600) })
+    renderAt(paths.home)
+
+    expect(screen.getByRole('link', { name: 'Mon espace' })).toHaveAttribute('href', paths.files)
+  })
 })
