@@ -37,6 +37,8 @@ export function LoginPage() {
   const sessionExpired = useAuthStore((auth) => auth.sessionExpired)
   const storeToken = useAuthStore((auth) => auth.login)
   const [formError, setFormError] = useState<string | null>(null)
+  // Le message d'inscription n'a plus lieu d'être une fois une tentative échouée.
+  const [showRegistered, setShowRegistered] = useState(Boolean(state?.registered))
   const {
     register,
     handleSubmit,
@@ -57,6 +59,7 @@ export function LoginPage() {
     try {
       storeToken(await login(credentials))
     } catch (error) {
+      setShowRegistered(false)
       setFormError(messageFor(getStatus(error)))
     }
   }
@@ -64,7 +67,7 @@ export function LoginPage() {
   return (
     <section className="w-full max-w-md rounded-card bg-surface p-6 shadow-card">
       <h1 className="mb-4 text-center text-xl font-bold text-ink">Connexion</h1>
-      {state?.registered && (
+      {showRegistered && (
         <Callout className="mb-4">Compte créé, vous pouvez vous connecter.</Callout>
       )}
       {sessionExpired && (
