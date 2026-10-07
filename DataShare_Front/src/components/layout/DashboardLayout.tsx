@@ -11,10 +11,12 @@ export function DashboardLayout() {
   const navigate = useNavigate()
   const logout = useAuthStore((auth) => auth.logout)
 
-  // Quitter la page avant d'effacer le token : sinon la garde réagirait la
-  // première et renverrait vers la connexion plutôt que vers l'accueil.
-  async function handleLogout() {
-    await navigate(paths.home)
+  // Quitter la page avant d'effacer le token, sinon la garde réagit la première
+  // et renvoie vers la connexion. flushSync est indispensable : le routeur
+  // applique une navigation en transition, donc après la mise à jour du store,
+  // même attendue avec await.
+  function handleLogout() {
+    void navigate(paths.home, { flushSync: true })
     logout()
   }
 
