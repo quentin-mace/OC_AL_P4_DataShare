@@ -163,7 +163,7 @@ Composant contrôlé : l'état vit dans la page. Le `label` n'est pas affiché m
 
 ### Header
 
-`<Header isAuthenticated={...} />` affiche "Se connecter" à un visiteur et "Mon espace" à un utilisateur connecté. Il est déjà inclus dans `PublicLayout`, une page n'a pas à l'ajouter.
+`<Header isAuthenticated={...} />` affiche "Se connecter" à un visiteur et "Mon espace" à un utilisateur connecté. Il est déjà inclus dans `PublicLayout`, qui lui passe l'état de connexion : une page n'a pas à l'ajouter.
 
 ## Formulaires
 
@@ -183,6 +183,21 @@ const { register, handleSubmit, setError, formState: { errors, isSubmitting } } 
 - **Erreurs serveur.** `getViolations(error)` (`src/api/problem.ts`) renvoie les `violations` d'un 422, `null` sinon. Chaque violation passe par `setError(propertyPath, ...)`, avec un libellé choisi d'après son `code` (code de la contrainte Symfony) ou, à défaut, d'après le champ. Toute autre erreur (réseau, 5xx) s'affiche dans un `Callout variant="error"` au-dessus du bouton.
 - `noValidate` sur le `<form>` : la validation native du navigateur ferait doublon avec zod, et avec d'autres messages.
 - `autoComplete` renseigné sur chaque champ (`email`, `given-name`, `new-password`...) pour les gestionnaires de mots de passe.
+
+## Authentification
+
+L'état de connexion vit dans un store zustand, `src/auth/authStore.ts`. Le token y est la seule donnée, persistée en `localStorage` (voir `tech_stack.md`, "Stockage du JWT").
+
+| Besoin | Outil |
+|---|---|
+| Savoir si l'utilisateur est connecté | `useIsAuthenticated()`, faux dès que le token est expiré |
+| Ouvrir ou fermer la session | `useAuthStore((auth) => auth.login)`, `useAuthStore((auth) => auth.logout)` |
+| Réserver une route aux comptes | la placer sous `RequireAuth` dans `src/routes/routes.tsx` |
+
+- **Aucun appel ne pose le token à la main.** Le store le prête au client axios (`setTokenProvider`), qui l'ajoute en `Authorization: Bearer` sur toute requête. Un token expiré n'est jamais envoyé : la session prend fin et la requête part sans en-tête.
+- **Un 401 ne déconnecte que s'il répond à une requête authentifiée.** `POST /login` (identifiants faux) et `POST /downloads/{token}` (mot de passe du fichier faux) renvoient aussi 401 : ces erreurs restent à l'appelant. Sur une requête qui portait le token, l'intercepteur ferme la session avec `sessionExpired`, la garde renvoie vers la connexion, qui affiche "Votre session a expiré".
+- **La garde garde la page demandée.** `RequireAuth` redirige vers `paths.login` avec `state.from`, et la page de connexion y ramène l'utilisateur une fois connecté (à défaut, vers `paths.files`).
+- **Pour tester un écran réservé**, poser un token valable avant le rendu : `useAuthStore.setState({ token: fakeToken(3600) })` (`src/test/jwt.ts`), et remettre le store à zéro dans `afterEach`.
 
 ## Icônes
 

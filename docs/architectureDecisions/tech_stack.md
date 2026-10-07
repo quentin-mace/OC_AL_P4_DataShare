@@ -203,6 +203,31 @@ ESLint reste la référence de l'écosystème, avec le catalogue de plugins le p
 - Front lancé seul et stack lancée depuis la racine utilisent deux volumes `node_modules` distincts, et ne doivent pas tourner en même temps, le port 5173 étant commun.
 - Ce conteneur ne sert qu'au développement. L'image de production (build statique servi par un serveur web) relève du [#23](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/23).
 
+## Stockage du JWT
+
+**Statut** : accepté, 2026-10-07, ticket [#35](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/35)
+
+L'API authentifie par un en-tête `Authorization: Bearer`, le front doit donc pouvoir lire le token pour l'envoyer. La question est de savoir où il vit entre deux requêtes.
+
+**Décision** : `localStorage`, via le middleware `persist` de zustand. La session survit au rechargement et à la fermeture de l'onglet, jusqu'à l'expiration du token.
+
+- **Exposition limitée dans le temps.** Le token vaut une heure (`JWT_TTL`) et ne peut pas être révoqué : un token dérobé reste exploitable au plus une heure.
+- **Pas de token périmé envoyé.** Le front lit la date `exp` du payload, sans en vérifier la signature, et ferme la session dès qu'elle est dépassée. Sans cette lecture, un token expiré resté en `localStorage` ferait échouer en 401 un envoi qui serait passé en anonyme (`POST /api/files`).
+- **Seul le token est persisté**, pas l'indicateur de session expirée ni aucune donnée de profil.
+
+### Alternatives évaluées
+
+| Option | Raison de l'écarter |
+|---|---|
+| `sessionStorage` | Même exposition à une faille XSS que `localStorage`, pour un bénéfice faible : la fenêtre est plus courte, mais l'utilisateur doit se reconnecter à chaque onglet. |
+| Mémoire seule | La plus sûre, mais un rechargement de page déconnecte. Inacceptable sur un parcours d'upload. |
+| Cookie `httpOnly` | Hors de portée du JavaScript, donc d'une XSS, mais suppose de revoir l'authentification du back (lecture du cookie par Lexik, protection CSRF, CORS avec identifiants). Coût non justifié sur le périmètre du projet. |
+
+### Conséquences
+
+- Une faille XSS donnerait accès au token. La parade est de ne pas en avoir : React échappe le contenu par défaut, et aucun `dangerouslySetInnerHTML` n'est employé. Risque à mentionner dans `SECURITY.md`.
+- La déconnexion est locale : le token effacé du navigateur reste valable côté serveur jusqu'à son expiration.
+
 ## Autres décisions
 
 - **Format de réponse de l'API** : JSON simple, et non le JSON-LD par défaut d'API Platform. Le front est écrit à la main et n'exploiterait pas les métadonnées de description. Conséquence connue, une collection est un simple tableau, sans enveloppe de pagination. Sans impact, le MVP n'impose ni tri ni pagination.
