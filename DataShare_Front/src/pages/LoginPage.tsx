@@ -10,9 +10,9 @@ export function LoginPage() {
   const state = useLocation().state as LoginLocationState | null
 
   return (
-    <>
+    <div className="flex flex-col items-center gap-4">
       <h1 className="text-2xl font-bold text-ink">Connexion</h1>
       {state?.registered && <Callout>Compte créé, vous pouvez vous connecter.</Callout>}
-    </>
+    </div>
   )
 }
