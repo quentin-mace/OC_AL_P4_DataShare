@@ -50,7 +50,7 @@ describe('apiClient', () => {
   })
 
   it('ends the session when the API refuses the token', async () => {
-    const onUnauthorized = vi.fn()
+    const onUnauthorized = vi.fn<() => void>()
     setUnauthorizedHandler(onUnauthorized)
     setTokenProvider(() => 'expired-token')
 
@@ -59,7 +59,7 @@ describe('apiClient', () => {
   })
 
   it('keeps the session on a 401 that does not concern the token', async () => {
-    const onUnauthorized = vi.fn()
+    const onUnauthorized = vi.fn<() => void>()
     setUnauthorizedHandler(onUnauthorized)
 
     await expect(apiClient.post('/login', {}, { adapter: reject401 })).rejects.toBeInstanceOf(
