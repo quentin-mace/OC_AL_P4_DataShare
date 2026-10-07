@@ -1,6 +1,6 @@
-import type { AxiosAdapter } from 'axios'
-import { afterEach, describe, expect, it } from 'vitest'
-import { apiClient, setTokenProvider } from './client'
+import { AxiosError, type AxiosAdapter } from 'axios'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { apiClient, setTokenProvider, setUnauthorizedHandler } from './client'
 
 // Renvoie la requête telle qu'axios l'aurait émise, sans réseau.
 const echo: AxiosAdapter = async (config) => ({
@@ -11,6 +11,12 @@ const echo: AxiosAdapter = async (config) => ({
   config,
 })
 
+// Refuse la requête comme le ferait l'API.
+const reject401: AxiosAdapter = async (config) => {
+  const response = { data: {}, status: 401, statusText: '', headers: {}, config }
+  throw new AxiosError('Request failed', undefined, config, null, response)
+}
+
 async function sentRequest() {
   const { data } = await apiClient.get('/files', { adapter: echo })
   return data
@@ -19,6 +25,7 @@ async function sentRequest() {
 describe('apiClient', () => {
   afterEach(() => {
     setTokenProvider(() => null)
+    setUnauthorizedHandler(() => {})
   })
 
   it('targets the API base URL from the environment', async () => {
@@ -40,5 +47,24 @@ describe('apiClient', () => {
     const request = await sentRequest()
 
     expect(request.headers.Authorization).toBeUndefined()
+  })
+
+  it('ends the session when the API refuses the token', async () => {
+    const onUnauthorized = vi.fn()
+    setUnauthorizedHandler(onUnauthorized)
+    setTokenProvider(() => 'expired-token')
+
+    await expect(apiClient.get('/files', { adapter: reject401 })).rejects.toBeInstanceOf(AxiosError)
+    expect(onUnauthorized).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the session on a 401 that does not concern the token', async () => {
+    const onUnauthorized = vi.fn()
+    setUnauthorizedHandler(onUnauthorized)
+
+    await expect(apiClient.post('/login', {}, { adapter: reject401 })).rejects.toBeInstanceOf(
+      AxiosError,
+    )
+    expect(onUnauthorized).not.toHaveBeenCalled()
   })
 })
