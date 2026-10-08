@@ -6,3 +6,12 @@ import { afterEach } from 'vitest'
 afterEach(() => {
   cleanup()
 })
+
+// jsdom n'implémente pas la modale native : on en garde l'essentiel, l'attribut
+// open qui rend le contenu visible (et donc trouvable par rôle).
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+  this.open = true
+}
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+  this.open = false
+}

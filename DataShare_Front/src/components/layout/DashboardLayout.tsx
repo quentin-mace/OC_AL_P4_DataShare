@@ -1,8 +1,10 @@
 import { LogOut } from 'lucide-react'
+import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuthStore } from '../../auth/authStore'
 import { paths } from '../../routes/paths'
 import { Button } from '../ui/Button'
+import { UploadDialog } from '../upload/UploadDialog'
 import { Copyright } from './Copyright'
 
 // Gabarit de l'espace personnel : sidebar en dégradé, barre du haut, contenu.
@@ -10,6 +12,7 @@ import { Copyright } from './Copyright'
 export function DashboardLayout() {
   const navigate = useNavigate()
   const logout = useAuthStore((auth) => auth.logout)
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   // Quitter la page avant d'effacer le token, sinon la garde réagit la première
   // et renvoie vers la connexion. flushSync est indispensable : le routeur
@@ -37,7 +40,10 @@ export function DashboardLayout() {
         <Copyright className="text-sm text-white" />
       </aside>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-12 items-center justify-end border-b border-row-border bg-canvas-strong px-6">
+        <header className="flex h-12 items-center justify-end gap-3 border-b border-row-border bg-canvas-strong px-6">
+          <Button variant="dark" size="sm" onClick={() => setUploadOpen(true)}>
+            Ajouter des fichiers
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -51,6 +57,7 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <UploadDialog open={uploadOpen} onClose={() => setUploadOpen(false)} />
     </div>
   )
 }
