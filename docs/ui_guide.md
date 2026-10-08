@@ -99,6 +99,7 @@ import { Button } from '../components/ui/Button'
 
 - `type="button"` par défaut. Le bouton qui soumet un formulaire doit le dire : `type="submit"`.
 - Désactiver avec `disabled`, la variante applique d'elle-même le style désactivé de la maquette.
+- Curseur main et survol sont fournis par `buttonStyles`, sur les boutons actifs seulement. Tailwind 4 ne met plus de curseur main sur un `<button>` : un bouton écrit sans `buttonStyles` en serait privé.
 - Les icônes passent par `leadingIcon` et `trailingIcon`, qui les masquent aux lecteurs d'écran. Un bouton avec une icône seule (menu "...", mobile) doit porter un `aria-label`.
 
 **Un lien qui navigue reste un lien.** "Se connecter" ou "Créer un compte" changent de page : ce sont des `<Link>` habillés en bouton, pas des `Button` avec un `onClick` qui navigue.
