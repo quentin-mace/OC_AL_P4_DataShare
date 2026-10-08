@@ -8,6 +8,7 @@ import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { paths } from './paths'
+import { RequireAuth } from './RequireAuth'
 
 // Exportées à part du routeur pour que les tests les montent dans un
 // routeur mémoire, sans dépendre de l'URL du navigateur.
@@ -23,8 +24,12 @@ export const routes: RouteObject[] = [
     ],
   },
   {
-    // La garde d'authentification s'ajoutera ici au ticket auth (US04).
-    element: <DashboardLayout />,
-    children: [{ path: paths.files, element: <FilesPage /> }],
+    element: <RequireAuth />,
+    children: [
+      {
+        element: <DashboardLayout />,
+        children: [{ path: paths.files, element: <FilesPage /> }],
+      },
+    ],
   },
 ]

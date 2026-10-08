@@ -18,3 +18,8 @@ export function getViolations(error: unknown): Violation[] | null {
   const violations: unknown = error.response.data?.violations
   return Array.isArray(violations) ? violations : null
 }
+
+/** Code HTTP d'une réponse en erreur, ou null sans réponse (réseau, CORS...). */
+export function getStatus(error: unknown): number | null {
+  return isAxiosError(error) ? (error.response?.status ?? null) : null
+}

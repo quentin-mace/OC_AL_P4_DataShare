@@ -10,13 +10,16 @@ export interface ButtonStyleOptions {
 }
 
 // Chaque variante porte son état désactivé, tel que dessiné dans UI_components.png.
-// "enabled:" limite le survol aux boutons actifs.
+// "enabled:" limite le survol et le curseur main aux boutons actifs.
 const variants: Record<ButtonVariant, string> = {
   tinted:
     'border-accent-border bg-accent-soft text-accent-strong enabled:hover:brightness-97 disabled:border-transparent disabled:bg-disabled disabled:text-disabled-ink',
   outline:
     'border-accent-border text-accent enabled:hover:bg-accent-soft disabled:border-disabled-ink/60 disabled:text-disabled-ink',
-  ghost: 'border-transparent text-accent enabled:hover:bg-accent-soft disabled:text-disabled-ink',
+  // Fond translucide au survol : posé sur canvas-strong (barre de l'espace
+  // personnel), accent-soft serait de la même teinte, donc invisible.
+  ghost:
+    'border-transparent text-accent enabled:hover:bg-accent/10 enabled:hover:text-accent-strong disabled:text-disabled-ink',
   dark: 'border-transparent bg-dark text-white enabled:hover:bg-ink disabled:bg-disabled/50 disabled:text-disabled-ink',
 }
 
@@ -37,7 +40,8 @@ export function buttonStyles({
   return joinClassNames(
     'inline-flex items-center justify-center rounded-control border font-medium transition',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-    'disabled:cursor-not-allowed',
+    // Tailwind 4 rend aux boutons le curseur par défaut du navigateur, la flèche.
+    'enabled:cursor-pointer disabled:cursor-not-allowed',
     variants[variant],
     sizes[size],
     fullWidth && 'w-full',

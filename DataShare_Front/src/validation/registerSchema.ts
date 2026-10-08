@@ -5,14 +5,17 @@ import { MIN_PASSWORD_SCORE, passwordStrength } from './passwordStrength'
 // n'évitent qu'un aller-retour : le serveur reste seul à faire foi.
 export const PASSWORD_MIN_LENGTH = 16
 
+// Partagé avec la connexion, qui doit accepter exactement les emails d'inscription.
+export const emailField = z
+  .string()
+  .trim()
+  .min(1, 'Saisissez votre email.')
+  .max(180, "L'email ne peut pas dépasser 180 caractères.")
+  // Même motif que la contrainte Email de Symfony, en mode html5 par défaut.
+  .pipe(z.email({ pattern: z.regexes.html5Email, message: 'Adresse email invalide.' }))
+
 const fields = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, 'Saisissez votre email.')
-    .max(180, "L'email ne peut pas dépasser 180 caractères.")
-    // Même motif que la contrainte Email de Symfony, en mode html5 par défaut.
-    .pipe(z.email({ pattern: z.regexes.html5Email, message: 'Adresse email invalide.' })),
+  email: emailField,
   firstName: z
     .string()
     .trim()

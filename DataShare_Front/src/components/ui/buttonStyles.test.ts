@@ -18,6 +18,13 @@ describe('buttonStyles', () => {
     expect(buttonStyles({ variant })).toContain(expected)
   })
 
+  it('shows the pointer cursor on an enabled button only', () => {
+    const classes = buttonStyles()
+
+    expect(classes).toContain('enabled:cursor-pointer')
+    expect(classes).toContain('disabled:cursor-not-allowed')
+  })
+
   it('applies the small size and full width', () => {
     const classes = buttonStyles({ size: 'sm', fullWidth: true })
 

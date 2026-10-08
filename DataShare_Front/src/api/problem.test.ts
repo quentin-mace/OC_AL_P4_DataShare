@@ -1,6 +1,6 @@
 import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it } from 'vitest'
-import { getViolations } from './problem'
+import { getStatus, getViolations } from './problem'
 
 const config = { headers: {} } as InternalAxiosRequestConfig
 
@@ -33,5 +33,16 @@ describe('getViolations', () => {
 
   it('ignores errors that are not HTTP responses', () => {
     expect(getViolations(new Error('Network Error'))).toBeNull()
+  })
+})
+
+describe('getStatus', () => {
+  it('returns the status of an HTTP error', () => {
+    expect(getStatus(httpError(429, {}))).toBe(429)
+  })
+
+  it('returns null when no response came back', () => {
+    expect(getStatus(new AxiosError('Network Error', 'ERR_NETWORK', config))).toBeNull()
+    expect(getStatus(new Error('boom'))).toBeNull()
   })
 })
