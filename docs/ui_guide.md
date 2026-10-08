@@ -162,6 +162,49 @@ const [filter, setFilter] = useState<'all' | 'active' | 'expired'>('all')
 
 Composant contrôlé : l'état vit dans la page. Le `label` n'est pas affiché mais annoncé, il doit dire ce que l'on filtre. Construit sur des boutons radio natifs, il se pilote aux flèches du clavier.
 
+### Modal
+
+Fenêtre modale sur `<dialog>` natif, ouverte par `showModal()` : le focus y reste piégé, l'arrière-plan devient inerte, Échap la ferme et le focus revient au bouton d'origine.
+
+```tsx
+const [open, setOpen] = useState(false)
+
+<Modal open={open} title="Ajouter un fichier" onClose={() => setOpen(false)}>
+  ...
+</Modal>
+```
+
+- Composant contrôlé : Échap et le bouton "Fermer" appellent `onClose`, c'est le parent qui passe `open` à `false`.
+- `title` devient le titre (`h2`) et le nom accessible de la modale.
+- Fermée, la modale n'est pas rendue : son contenu repart de zéro à chaque ouverture.
+- Dans les tests, jsdom n'implémente pas `showModal()` : `src/test/setup.ts` le remplace par la simple pose de l'attribut `open`. La touche Échap se simule avec un événement `cancel` sur la modale.
+
+### FileField
+
+Choix d'un fichier, dessiné comme la maquette : icône, nom, taille ("2,6 Mo", via `formatFileSize` de `src/format/fileSize.ts`) et bouton "Changer". Tant qu'aucun fichier n'est choisi, un bouton "Choisir un fichier" en tient lieu.
+
+```tsx
+<Controller
+  control={control}
+  name="file"
+  render={({ field }) => (
+    <FileField label="Fichier" file={field.value} onChange={field.onChange} onBlur={field.onBlur} error={errors.file?.message} />
+  )}
+/>
+```
+
+- Composant contrôlé, branché par `Controller` de react-hook-form et non par `register` : la valeur est un `File`, pas le texte d'un champ.
+- L'`<input type="file">` natif reste dans la page, masqué : c'est lui qui ouvre le sélecteur du système, et c'est sur lui que les tests déposent un fichier (`userEvent.upload(screen.getByLabelText('Fichier'), file)`).
+- `label` n'est pas affiché (la maquette n'en dessine pas) mais annoncé. `error` est relié au champ et aux boutons.
+
+### ProgressBar
+
+```tsx
+<ProgressBar label="Envoi en cours" value={progress} />
+```
+
+Barre d'avancement de 0 à 100 sur `<progress>` natif, avec le pourcentage affiché à droite du libellé. Pour un envoi, la valeur vient de `onUploadProgress` d'axios (voir `uploadFile` dans `src/api/files.ts`).
+
 ### Header
 
 `<Header isAuthenticated={...} />` affiche "Se connecter" à un visiteur et "Mon espace" à un utilisateur connecté. Il est déjà inclus dans `PublicLayout`, qui lui passe l'état de connexion : une page n'a pas à l'ajouter.
@@ -220,6 +263,8 @@ import { Trash2 } from 'lucide-react'
 | Accéder | `ArrowRight` |
 | Fichier protégé | `Lock` |
 | Copier le lien | `Copy` |
+| Fichier (sélection, lien créé) | `FileText` |
+| Fermer une modale | `X` |
 | Déconnexion | `LogOut` |
 | Callouts | `Info`, `TriangleAlert`, `CircleAlert` |
 
