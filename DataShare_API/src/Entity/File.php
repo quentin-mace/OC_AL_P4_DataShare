@@ -260,7 +260,7 @@ class File
      * categorizes it.
      */
     #[ORM\Column(length: 255)]
-    #[Groups(['file:read', 'download:read'])]
+    #[Groups(['file:read', 'file:list', 'download:read'])]
     private ?string $mimeType = null;
 
     /**
