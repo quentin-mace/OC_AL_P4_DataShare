@@ -57,7 +57,7 @@ Une page ne dessine ni en-tête ni pied de page : elle est rendue dans un gabari
 | Gabarit | Pages | Contenu |
 |---|---|---|
 | `PublicLayout` | accueil, connexion, inscription, téléchargement, 404 | dégradé de marque, `Header`, contenu centré, copyright (desktop seulement) |
-| `DashboardLayout` | espace personnel | sidebar en dégradé (desktop seulement), barre du haut, fond `canvas` |
+| `DashboardLayout` | espace personnel | sidebar en dégradé (desktop), menu repliable ouvert par un burger (mobile), barre du haut, fond `canvas` |
 
 Les pages publiques présentent leur contenu dans une carte. Il n'existe pas encore de composant `Card`, l'assemblage à utiliser est :
 
@@ -290,7 +290,7 @@ import { Trash2 } from 'lucide-react'
 
 ## Responsive
 
-Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`).
+Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`) et remplacée par `MobileMenu`, un `<dialog>` latéral ouvert par le burger (`md:hidden`). Les liens de navigation vivent dans `SidebarNav`, partagé par les deux : un lien ajouté à l'espace personnel s'ajoute là. Dans une ligne de l'historique, le libellé "Accéder" n'est visible qu'à partir de `md:` (`sr-only md:not-sr-only`), la flèche seule reste sur mobile.
 
 ## Accessibilité
 
