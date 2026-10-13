@@ -221,7 +221,7 @@ Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la
 </ul>
 ```
 
-Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`fileIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien. L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
+Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien. L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
 
 ### Header
 
@@ -283,7 +283,7 @@ import { Trash2 } from 'lucide-react'
 | Fichier protégé | `Lock` |
 | Copier le lien | `Copy` |
 | Fichier (sélection, lien créé, téléchargement) | `FileText` |
-| Type de fichier dans l'historique | `FileImage`, `FileMusic`, `FilePlay`, `FileText` par défaut (`fileIcon`) |
+| Type de fichier dans l'historique | `FileImage`, `FileMusic`, `FilePlay`, `FileText` par défaut (`FileTypeIcon`) |
 | Fermer une modale | `X` |
 | Déconnexion | `LogOut` |
 | Callouts | `Info`, `TriangleAlert`, `CircleAlert` |

@@ -60,13 +60,13 @@ describe('FileRow', () => {
   it('shows a lock on a password protected file only', () => {
     renderRow(file({ hasPassword: true }))
 
-    expect(screen.getByRole('img', { name: 'Protégé par mot de passe' })).toBeInTheDocument()
+    expect(screen.getByText('Protégé par mot de passe')).toBeInTheDocument()
   })
 
   it('shows no lock without a password', () => {
     renderRow(file())
 
-    expect(screen.queryByRole('img', { name: 'Protégé par mot de passe' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Protégé par mot de passe')).not.toBeInTheDocument()
   })
 
   it('marks an expired file and offers no link', () => {
