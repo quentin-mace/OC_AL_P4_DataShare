@@ -205,6 +205,14 @@ Choix d'un fichier, dessiné comme la maquette : icône, nom, taille ("2,6 Mo", 
 
 Barre d'avancement de 0 à 100 sur `<progress>` natif, avec le pourcentage affiché à droite du libellé. Pour un envoi, la valeur vient de `onUploadProgress` d'axios (voir `uploadFile` dans `src/api/files.ts`).
 
+### FileSummary
+
+```tsx
+<FileSummary name={file.name} size={file.size} />
+```
+
+Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la carte de fin d'upload comme sur la page de téléchargement. Un nom trop long est tronqué, et reste lisible en entier au survol (`title`).
+
 ### Header
 
 `<Header isAuthenticated={...} />` affiche "Se connecter" à un visiteur et "Mon espace" à un utilisateur connecté. Il est déjà inclus dans `PublicLayout`, qui lui passe l'état de connexion : une page n'a pas à l'ajouter.
@@ -240,6 +248,7 @@ L'état de connexion vit dans un store zustand, `src/auth/authStore.ts`. Le toke
 
 - **Aucun appel ne pose le token à la main.** Le store le prête au client axios (`setTokenProvider`), qui l'ajoute en `Authorization: Bearer` sur toute requête. Un token expiré n'est jamais envoyé : la session prend fin et la requête part sans en-tête.
 - **Un 401 ne déconnecte que s'il répond à une requête authentifiée.** `POST /login` (identifiants faux) et `POST /downloads/{token}` (mot de passe du fichier faux) renvoient aussi 401 : ces erreurs restent à l'appelant. Sur une requête qui portait le token, l'intercepteur ferme la session avec `sessionExpired`, la garde renvoie vers la connexion, qui affiche "Votre session a expiré".
+- **Une route publique s'appelle avec `skipAuth: true`.** Le token n'y est pas envoyé, si bien qu'un 401 de la route ne peut pas déconnecter un visiteur connecté. C'est le cas des deux appels de `src/api/downloads.ts`. Sans cette option, un mauvais mot de passe de fichier fermerait la session de l'utilisateur.
 - **La garde garde la page demandée.** `RequireAuth` redirige vers `paths.login` avec `state.from`, et la page de connexion y ramène l'utilisateur une fois connecté (à défaut, vers `paths.files`).
 - **Pour tester un écran réservé**, poser un token valable avant le rendu : `useAuthStore.setState({ token: fakeToken(3600) })` (`src/test/jwt.ts`), et remettre le store à zéro dans `afterEach`.
 
@@ -263,7 +272,7 @@ import { Trash2 } from 'lucide-react'
 | Accéder | `ArrowRight` |
 | Fichier protégé | `Lock` |
 | Copier le lien | `Copy` |
-| Fichier (sélection, lien créé) | `FileText` |
+| Fichier (sélection, lien créé, téléchargement) | `FileText` |
 | Fermer une modale | `X` |
 | Déconnexion | `LogOut` |
 | Callouts | `Info`, `TriangleAlert`, `CircleAlert` |

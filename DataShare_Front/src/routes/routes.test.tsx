@@ -1,7 +1,9 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import type { AxiosAdapter } from 'axios'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { apiClient } from '../api/client'
 import { useAuthStore } from '../auth/authStore'
 import { fakeToken } from '../test/jwt'
 import { paths } from './paths'
@@ -13,8 +15,22 @@ function renderAt(path: string) {
   return router
 }
 
+// Les pages qui chargent des données (téléchargement) restent en attente :
+// seul l'aiguillage est testé ici, sans réseau.
+const requestedUrl = vi.fn<(url: string | undefined) => void>()
+const pendingAdapter: AxiosAdapter = (config) => {
+  requestedUrl(config.url)
+  return new Promise(() => {})
+}
+
 describe('routes', () => {
+  beforeEach(() => {
+    apiClient.defaults.adapter = pendingAdapter
+  })
+
   afterEach(() => {
+    apiClient.defaults.adapter = undefined
+    requestedUrl.mockReset()
     useAuthStore.setState({ token: null, sessionExpired: false })
     localStorage.clear()
   })
@@ -31,12 +47,11 @@ describe('routes', () => {
     expect(screen.getByRole('heading', { level: 1, name: title })).toBeInTheDocument()
   })
 
-  it('passes the download token to the download page', () => {
+  it('passes the download token to the download page', async () => {
     renderAt(paths.download('0123456789abcdef0123456789abcdef'))
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveAttribute(
-      'data-download-token',
-      '0123456789abcdef0123456789abcdef',
+    await waitFor(() =>
+      expect(requestedUrl).toHaveBeenCalledWith('/downloads/0123456789abcdef0123456789abcdef'),
     )
   })
 
