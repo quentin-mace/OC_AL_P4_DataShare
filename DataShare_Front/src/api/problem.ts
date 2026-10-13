@@ -23,3 +23,14 @@ export function getViolations(error: unknown): Violation[] | null {
 export function getStatus(error: unknown): number | null {
   return isAxiosError(error) ? (error.response?.status ?? null) : null
 }
+
+/**
+ * Délai en secondes avant la prochaine tentative, lu dans l'en-tête Retry-After
+ * d'un 429, ou null s'il est absent ou illisible.
+ */
+export function getRetryAfter(error: unknown): number | null {
+  if (!isAxiosError(error)) return null
+
+  const seconds = Number(error.response?.headers['retry-after'])
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : null
+}

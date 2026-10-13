@@ -1,5 +1,15 @@
 import axios, { isAxiosError } from 'axios'
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * N'envoie pas le JWT : réservé aux routes publiques, où un 401 sanctionne
+     * autre chose que le token et ne doit pas fermer la session.
+     */
+    skipAuth?: boolean
+  }
+}
+
 type TokenProvider = () => string | null
 type UnauthorizedHandler = () => void
 
@@ -29,7 +39,7 @@ export const apiClient = axios.create({
 // L'en-tête n'est ajouté qu'avec un token : sur POST /files, un Authorization
 // invalide renvoie 401 au lieu d'un envoi anonyme.
 apiClient.interceptors.request.use((config) => {
-  const token = getToken()
+  const token = config.skipAuth ? null : getToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -38,7 +48,9 @@ apiClient.interceptors.request.use((config) => {
 
 // Un 401 ne met fin à la session que s'il répond à une requête authentifiée :
 // POST /login (identifiants faux) et POST /downloads/{token} (mot de passe du
-// fichier faux) renvoient aussi 401, sans que le token soit en cause.
+// fichier faux) renvoient aussi 401, sans que le token soit en cause. Ces
+// routes publiques passent donc skipAuth, faute de quoi un visiteur connecté
+// serait déconnecté par un mauvais mot de passe de fichier.
 // L'erreur est toujours propagée, l'appelant reste maître de son affichage.
 apiClient.interceptors.response.use(undefined, (error: unknown) => {
   if (

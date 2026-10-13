@@ -1,15 +1,15 @@
 import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it } from 'vitest'
-import { getStatus, getViolations } from './problem'
+import { getRetryAfter, getStatus, getViolations } from './problem'
 
 const config = { headers: {} } as InternalAxiosRequestConfig
 
-function httpError(status: number, data: unknown) {
+function httpError(status: number, data: unknown, headers: Record<string, string> = {}) {
   return new AxiosError('Request failed', undefined, config, null, {
     data,
     status,
     statusText: '',
-    headers: {},
+    headers,
     config,
   })
 }
@@ -44,5 +44,23 @@ describe('getStatus', () => {
   it('returns null when no response came back', () => {
     expect(getStatus(new AxiosError('Network Error', 'ERR_NETWORK', config))).toBeNull()
     expect(getStatus(new Error('boom'))).toBeNull()
+  })
+})
+
+describe('getRetryAfter', () => {
+  it('returns the Retry-After delay in seconds', () => {
+    expect(getRetryAfter(httpError(429, {}, { 'retry-after': '540' }))).toBe(540)
+  })
+
+  it('returns null without the header', () => {
+    expect(getRetryAfter(httpError(429, {}))).toBeNull()
+  })
+
+  it('returns null for an unreadable header', () => {
+    expect(getRetryAfter(httpError(429, {}, { 'retry-after': 'soon' }))).toBeNull()
+  })
+
+  it('returns null for an error without a response', () => {
+    expect(getRetryAfter(new Error('Network Error'))).toBeNull()
   })
 })
