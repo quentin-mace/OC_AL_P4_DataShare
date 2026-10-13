@@ -70,10 +70,11 @@ final class FileListTest extends WebTestCase
         $body = $this->decodeResponse();
         self::assertCount(1, $body);
         self::assertEqualsCanonicalizing(
-            ['id', 'name', 'size', 'sentAt', 'expiresAt', 'status', 'hasPassword', 'downloadToken', 'tags'],
+            ['id', 'name', 'size', 'mimeType', 'sentAt', 'expiresAt', 'status', 'hasPassword', 'downloadToken', 'tags'],
             array_keys($body[0]),
         );
         self::assertSame('rapport.pdf', $body[0]['name']);
+        self::assertSame('application/pdf', $body[0]['mimeType']);
         self::assertSame('active', $body[0]['status']);
         self::assertFalse($body[0]['hasPassword']);
         self::assertSame(['facture'], $body[0]['tags']);

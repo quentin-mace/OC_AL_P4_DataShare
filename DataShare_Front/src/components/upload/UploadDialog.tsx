@@ -8,6 +8,8 @@ import { UploadSuccess } from './UploadSuccess'
 export interface UploadDialogProps {
   open: boolean
   onClose: () => void
+  /** Un fichier vient d'être envoyé, avant même la fermeture de la modale. */
+  onUploaded?: () => void
 }
 
 interface Upload {
@@ -16,7 +18,7 @@ interface Upload {
 }
 
 /** Formulaire d'envoi puis lien de partage, dans une même modale (US01). */
-export function UploadDialog({ open, onClose }: UploadDialogProps) {
+export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
   const [upload, setUpload] = useState<Upload | null>(null)
 
   // Rouvrir la modale repart d'un formulaire vierge.
@@ -30,7 +32,12 @@ export function UploadDialog({ open, onClose }: UploadDialogProps) {
       {upload ? (
         <UploadSuccess file={upload.file} expiresInDays={upload.expiresInDays} />
       ) : (
-        <UploadForm onUploaded={(file, { expiresInDays }) => setUpload({ file, expiresInDays })} />
+        <UploadForm
+          onUploaded={(file, { expiresInDays }) => {
+            setUpload({ file, expiresInDays })
+            onUploaded?.()
+          }}
+        />
       )}
     </Modal>
   )

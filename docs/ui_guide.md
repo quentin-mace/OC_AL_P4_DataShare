@@ -57,7 +57,7 @@ Une page ne dessine ni en-tête ni pied de page : elle est rendue dans un gabari
 | Gabarit | Pages | Contenu |
 |---|---|---|
 | `PublicLayout` | accueil, connexion, inscription, téléchargement, 404 | dégradé de marque, `Header`, contenu centré, copyright (desktop seulement) |
-| `DashboardLayout` | espace personnel | sidebar en dégradé (desktop seulement), barre du haut, fond `canvas` |
+| `DashboardLayout` | espace personnel | sidebar en dégradé (desktop), menu repliable ouvert par un burger (mobile), barre du haut, fond `canvas` |
 
 Les pages publiques présentent leur contenu dans une carte. Il n'existe pas encore de composant `Card`, l'assemblage à utiliser est :
 
@@ -72,7 +72,7 @@ Les URLs ne s'écrivent jamais à la main : `paths.login`, `paths.download(token
 
 ## Composants
 
-Tous dans `src/components/ui/`, sauf `Header` et les gabarits dans `src/components/layout/`.
+Tous dans `src/components/ui/`, sauf `Header` et les gabarits dans `src/components/layout/`, et les composants propres à une fonctionnalité, rangés par domaine (`upload/`, `files/`).
 
 ### Button
 
@@ -213,6 +213,16 @@ Barre d'avancement de 0 à 100 sur `<progress>` natif, avec le pourcentage affic
 
 Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la carte de fin d'upload comme sur la page de téléchargement. Un nom trop long est tronqué, et reste lisible en entier au survol (`title`).
 
+### FileRow
+
+```tsx
+<ul className="flex flex-col gap-3">
+  {files.map((file) => <FileRow key={file.id} file={file} />)}
+</ul>
+```
+
+Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien. L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
+
 ### Header
 
 `<Header isAuthenticated={...} />` affiche "Se connecter" à un visiteur et "Mon espace" à un utilisateur connecté. Il est déjà inclus dans `PublicLayout`, qui lui passe l'état de connexion : une page n'a pas à l'ajouter.
@@ -273,13 +283,14 @@ import { Trash2 } from 'lucide-react'
 | Fichier protégé | `Lock` |
 | Copier le lien | `Copy` |
 | Fichier (sélection, lien créé, téléchargement) | `FileText` |
+| Type de fichier dans l'historique | `FileImage`, `FileMusic`, `FilePlay`, `FileText` par défaut (`FileTypeIcon`) |
 | Fermer une modale | `X` |
 | Déconnexion | `LogOut` |
 | Callouts | `Info`, `TriangleAlert`, `CircleAlert` |
 
 ## Responsive
 
-Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`).
+Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`) et remplacée par `MobileMenu`, un `<dialog>` latéral ouvert par le burger (`md:hidden`). Les liens de navigation vivent dans `SidebarNav`, partagé par les deux : un lien ajouté à l'espace personnel s'ajoute là. Dans une ligne de l'historique, le libellé "Accéder" n'est visible qu'à partir de `md:` (`sr-only md:not-sr-only`), la flèche seule reste sur mobile.
 
 ## Accessibilité
 
@@ -310,7 +321,7 @@ Foncer `accent` et `coral` suffirait à corriger l'essentiel, en changeant deux 
 ## Ajouter un composant
 
 1. Vérifier qu'aucun composant existant ne couvre le besoin, éventuellement avec une variante de plus.
-2. Le placer dans `components/ui/` s'il est générique (ne connaît ni les routes ni l'API), dans `components/layout/` sinon.
+2. Le placer dans `components/ui/` s'il est générique (ne connaît ni les routes ni l'API), dans `components/layout/` pour un gabarit, dans le dossier de sa fonctionnalité sinon (`components/files/`...).
 3. Partir d'un élément HTML natif, accepter `className` et les props natives utiles, n'utiliser que des tokens.
 4. Écrire son test à côté (`Composant.test.tsx`), en vérifiant le comportement visible : rôle, nom accessible, réaction au clic et au clavier.
 5. L'ajouter à ce guide.

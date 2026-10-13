@@ -29,8 +29,12 @@ let reply: { status: number; data: unknown }
 // Quand il est posé, l'envoi s'arrête à mi-chemin jusqu'à ce que le test le libère.
 let pause: Promise<void> | null
 
-// Remplace le réseau : chaque test choisit la réponse de POST /files.
+// Remplace le réseau : chaque test choisit la réponse de POST /files. La page
+// Mes fichiers, derrière la modale, reçoit un historique vide.
 const adapter: AxiosAdapter = async (config) => {
+  if (config.method === 'get') {
+    return { data: [], status: 200, statusText: '', headers: {}, config }
+  }
   sent([...(config.data as FormData).entries()])
   config.onUploadProgress?.({ loaded: 50, total: 100, progress: 0.5 } as AxiosProgressEvent)
   if (pause) await pause

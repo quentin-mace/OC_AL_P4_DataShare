@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { daysUntil, expirationNotice } from './expiration'
+import { daysUntil, expirationLabel, expirationNotice } from './expiration'
 
 describe('daysUntil', () => {
   const now = new Date(2026, 9, 13, 22, 0)
@@ -31,5 +31,16 @@ describe('expirationNotice', () => {
     [7, 'info', 'Ce fichier expirera dans 7 jours.'],
   ])('describes %i day(s) left', (days, variant, text) => {
     expect(expirationNotice(days)).toEqual({ variant, text })
+  })
+})
+
+describe('expirationLabel', () => {
+  it.each([
+    [0, "Expire aujourd'hui"],
+    [1, 'Expire demain'],
+    [2, 'Expire dans 2 jours'],
+    [7, 'Expire dans 7 jours'],
+  ])('labels %i day(s) left', (days, label) => {
+    expect(expirationLabel(days)).toBe(label)
   })
 })
