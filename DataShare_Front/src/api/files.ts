@@ -14,6 +14,21 @@ export interface UploadedFile {
   tags: string[]
 }
 
+/** Fichier de l'historique, tel que renvoyé par GET /files. */
+export interface FileHistoryItem {
+  id: number
+  name: string
+  size: number
+  mimeType: string
+  sentAt: string
+  expiresAt: string
+  /** Dérivé de expiresAt par l'API, au moment de la requête. */
+  status: 'active' | 'expired'
+  hasPassword: boolean
+  downloadToken: string
+  tags: string[]
+}
+
 export interface UploadOptions {
   /** Avancement de l'envoi, de 0 à 100 ; le stockage côté serveur suit les 100 %. */
   onProgress?: (percent: number) => void
@@ -40,5 +55,17 @@ export async function uploadFile(
     onUploadProgress: ({ progress }: AxiosProgressEvent) =>
       onProgress?.(Math.round((progress ?? 0) * 100)),
   })
+  return data
+}
+
+/**
+ * Historique complet du compte connecté, du plus récent au plus ancien, y
+ * compris les fichiers expirés. Filtres et pagination sont appliqués côté
+ * client : voir contrat-api.md.
+ */
+export async function listFiles({ signal }: { signal?: AbortSignal } = {}): Promise<
+  FileHistoryItem[]
+> {
+  const { data } = await apiClient.get<FileHistoryItem[]>('/files', { signal })
   return data
 }

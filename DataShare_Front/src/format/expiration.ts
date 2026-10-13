@@ -24,3 +24,10 @@ export function expirationNotice(days: number): ExpirationNotice {
   if (days === 1) return { variant: 'warning', text: 'Ce fichier expirera demain.' }
   return { variant: 'info', text: `Ce fichier expirera dans ${days} jours.` }
 }
+
+/** Échéance d'un fichier encore actif, dans une ligne de l'historique. */
+export function expirationLabel(days: number): string {
+  if (days <= 0) return "Expire aujourd'hui"
+  if (days === 1) return 'Expire demain'
+  return `Expire dans ${days} jours`
+}
