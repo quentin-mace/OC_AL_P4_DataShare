@@ -196,6 +196,35 @@ final class DownloadTest extends WebTestCase
         self::assertGreaterThan(0, (int) $this->client->getResponse()->headers->get('Retry-After'));
     }
 
+    /**
+     * A browser only lets the front read the headers listed in
+     * Access-Control-Expose-Headers: without it, Retry-After reaches the
+     * network but never the page, which can only say "a few minutes".
+     */
+    public function testItExposesTheDelayToTheBrowser(): void
+    {
+        $token = $this->uploadFile(['password' => self::PASSWORD])['downloadToken'];
+
+        for ($attempt = 1; $attempt <= 6; ++$attempt) {
+            $this->client->request(
+                'POST',
+                "/api/downloads/{$token}",
+                server: [
+                    'CONTENT_TYPE' => 'application/json',
+                    'HTTP_ACCEPT' => 'application/json',
+                    'HTTP_ORIGIN' => 'http://localhost:5173',
+                ],
+                content: '{"password":"un-mauvais-mot-de-passe"}',
+            );
+        }
+
+        self::assertResponseStatusCodeSame(429);
+        self::assertStringContainsStringIgnoringCase(
+            'Retry-After',
+            (string) $this->client->getResponse()->headers->get('Access-Control-Expose-Headers'),
+        );
+    }
+
     public function testThrottlingIsScopedToTheLink(): void
     {
         $blocked = $this->uploadFile(['password' => self::PASSWORD])['downloadToken'];
