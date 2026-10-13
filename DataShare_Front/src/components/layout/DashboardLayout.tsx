@@ -7,12 +7,19 @@ import { Button } from '../ui/Button'
 import { UploadDialog } from '../upload/UploadDialog'
 import { Copyright } from './Copyright'
 
+/** Contexte transmis aux pages de l'espace personnel par <Outlet>. */
+export interface DashboardContext {
+  /** Change à chaque fichier envoyé : la liste s'en sert pour se recharger. */
+  filesVersion: number
+}
+
 // Gabarit de l'espace personnel : sidebar en dégradé, barre du haut, contenu.
 // Le menu mobile (sidebar repliable) viendra avec la page Mes fichiers.
 export function DashboardLayout() {
   const navigate = useNavigate()
   const logout = useAuthStore((auth) => auth.logout)
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [filesVersion, setFilesVersion] = useState(0)
 
   // Quitter la page avant d'effacer le token, sinon la garde réagit la première
   // et renvoie vers la connexion. flushSync est indispensable : le routeur
@@ -54,10 +61,14 @@ export function DashboardLayout() {
           </Button>
         </header>
         <main className="flex-1 p-5">
-          <Outlet />
+          <Outlet context={{ filesVersion } satisfies DashboardContext} />
         </main>
       </div>
-      <UploadDialog open={uploadOpen} onClose={() => setUploadOpen(false)} />
+      <UploadDialog
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onUploaded={() => setFilesVersion((version) => version + 1)}
+      />
     </div>
   )
 }
