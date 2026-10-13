@@ -67,4 +67,26 @@ describe('apiClient', () => {
     )
     expect(onUnauthorized).not.toHaveBeenCalled()
   })
+
+  it('sends no Authorization header on a public request, even with a token', async () => {
+    setTokenProvider(() => 'jwt-token')
+
+    const { data: request } = await apiClient.get('/downloads/abc', {
+      adapter: echo,
+      skipAuth: true,
+    })
+
+    expect(request.headers.Authorization).toBeUndefined()
+  })
+
+  it('keeps the session on a 401 from a public request made while logged in', async () => {
+    const onUnauthorized = vi.fn<() => void>()
+    setUnauthorizedHandler(onUnauthorized)
+    setTokenProvider(() => 'jwt-token')
+
+    await expect(
+      apiClient.post('/downloads/abc', {}, { adapter: reject401, skipAuth: true }),
+    ).rejects.toBeInstanceOf(AxiosError)
+    expect(onUnauthorized).not.toHaveBeenCalled()
+  })
 })
