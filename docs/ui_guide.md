@@ -225,6 +225,21 @@ Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la
 
 Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien. L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
 
+### DeleteFileDialog
+
+```tsx
+const [toDelete, setToDelete] = useState<FileHistoryItem | null>(null)
+
+<DeleteFileDialog file={toDelete} onClose={() => setToDelete(null)} onDeleted={handleDeleted} />
+```
+
+Confirmation de suppression (US06, `src/components/files/`), construite sur `Modal` en `alertdialog` : le titre "Supprimer ce fichier ?" la nomme, le message (nom du fichier, action irréversible) la décrit.
+
+- Ouverte tant que `file` n'est pas `null`. Le focus arrive sur "Annuler", le choix sans conséquence, et revient au bouton d'origine si l'utilisateur renonce.
+- Elle appelle elle-même `DELETE /files/{id}`. Un 404 vaut succès, le fichier n'existe déjà plus. Toute autre erreur s'affiche dans la modale, qui reste ouverte, et le focus revient sur "Annuler".
+- Pendant la requête, les boutons sont désactivés et la modale ne se ferme pas (Échap compris) : fermer laisserait croire à une annulation.
+- `onDeleted` ne ferme pas la modale. Le parent retire le fichier de sa liste, ferme, puis place le focus : le bouton qui avait ouvert la modale a disparu avec sa ligne.
+
 ### Header
 
 `<Header isAuthenticated={...} />` affiche "Se connecter" à un visiteur et "Mon espace" à un utilisateur connecté. Il est déjà inclus dans `PublicLayout`, qui lui passe l'état de connexion : une page n'a pas à l'ajouter.
