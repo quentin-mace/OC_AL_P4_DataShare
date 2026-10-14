@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router'
 import { listFiles, type FileHistoryItem } from '../api/files'
+import { DeleteFileDialog } from '../components/files/DeleteFileDialog'
 import { FileRow } from '../components/files/FileRow'
 import type { DashboardContext } from '../components/layout/DashboardLayout'
 import { Button } from '../components/ui/Button'
@@ -28,6 +29,17 @@ export function FilesPage() {
   const [state, setState] = useState<PageState>({ kind: 'loading' })
   const [filter, setFilter] = useState<Filter>('all')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [toDelete, setToDelete] = useState<FileHistoryItem | null>(null)
+  const [deleted, setDeleted] = useState<FileHistoryItem | null>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  // Le bouton qui avait ouvert la confirmation a disparu avec sa ligne : le
+  // focus, que la modale lui rendrait, irait se perdre sur <body>. Il va au
+  // titre, d'où la liste se reparcourt. L'effet suit le démontage de la
+  // modale, donc le close() qui aurait tenté de rendre le focus.
+  useEffect(() => {
+    if (deleted) headingRef.current?.focus()
+  }, [deleted])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -46,9 +58,27 @@ export function FilesPage() {
     setVisibleCount(PAGE_SIZE)
   }
 
+  // Retrait local, sans recharger : la liste est déjà entière côté client.
+  function handleDeleted(file: FileHistoryItem) {
+    setState((current) =>
+      current.kind === 'ready'
+        ? { kind: 'ready', files: current.files.filter(({ id }) => id !== file.id) }
+        : current,
+    )
+    setToDelete(null)
+    setDeleted(file)
+  }
+
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-2xl font-bold text-ink">Mes fichiers</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold text-ink">
+        Mes fichiers
+      </h1>
+      {deleted && (
+        <output className="text-sm text-ink-muted">
+          Le fichier {deleted.name} a été supprimé.
+        </output>
+      )}
       <div>
         <Switch
           label="Filtrer les fichiers"
@@ -71,8 +101,14 @@ export function FilesPage() {
           filter={filter}
           visibleCount={visibleCount}
           onShowMore={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          onDelete={setToDelete}
         />
       )}
+      <DeleteFileDialog
+        file={toDelete}
+        onClose={() => setToDelete(null)}
+        onDeleted={handleDeleted}
+      />
     </div>
   )
 }
@@ -82,9 +118,10 @@ interface FileListProps {
   filter: Filter
   visibleCount: number
   onShowMore: () => void
+  onDelete: (file: FileHistoryItem) => void
 }
 
-function FileList({ files, filter, visibleCount, onShowMore }: FileListProps) {
+function FileList({ files, filter, visibleCount, onShowMore, onDelete }: FileListProps) {
   const matching = filter === 'all' ? files : files.filter((file) => file.status === filter)
 
   if (matching.length === 0) {
@@ -96,7 +133,7 @@ function FileList({ files, filter, visibleCount, onShowMore }: FileListProps) {
     <>
       <ul className="flex flex-col gap-3">
         {matching.slice(0, visibleCount).map((file) => (
-          <FileRow key={file.id} file={file} />
+          <FileRow key={file.id} file={file} onDelete={onDelete} />
         ))}
       </ul>
       {matching.length > visibleCount && (

@@ -1,17 +1,23 @@
-import { ArrowRight, Lock } from 'lucide-react'
+import { ArrowRight, Lock, Trash2 } from 'lucide-react'
 import { Link } from 'react-router'
 import type { FileHistoryItem } from '../../api/files'
 import { daysUntil, expirationLabel } from '../../format/expiration'
 import { paths } from '../../routes/paths'
+import { Button } from '../ui/Button'
 import { buttonStyles } from '../ui/buttonStyles'
 import { FileTypeIcon } from './FileTypeIcon'
 
 export interface FileRowProps {
   file: FileHistoryItem
+  /** Demande la suppression du fichier ; la confirmation revient à la page. */
+  onDelete: (file: FileHistoryItem) => void
 }
 
-/** Une ligne de l'historique (US05) : type, nom, échéance, cadenas et lien de partage. */
-export function FileRow({ file }: FileRowProps) {
+/**
+ * Une ligne de l'historique (US05) : type, nom, échéance, cadenas, suppression
+ * (US06) et lien de partage.
+ */
+export function FileRow({ file, onDelete }: FileRowProps) {
   // L'état vient de l'API, seule à faire foi ; l'échéance n'est qu'un libellé.
   const expired = file.status === 'expired'
 
@@ -34,11 +40,19 @@ export function FileRow({ file }: FileRowProps) {
           <span className="sr-only">Protégé par mot de passe</span>
         </span>
       )}
-      {expired ? (
+      {expired && (
         <p className="hidden text-xs text-ink-muted/70 md:block">
           Ce fichier a expiré, il n'est plus stocké chez nous
         </p>
-      ) : (
+      )}
+      {/* Aussi sur une ligne expirée, contrairement à la maquette : c'est le seul
+          moyen de retirer de l'historique un fichier dont l'objet a été purgé.
+          Sur mobile, l'icône seule, comme la flèche d'"Accéder" ci-dessous. */}
+      <Button variant="outline" size="sm" onClick={() => onDelete(file)}>
+        <Trash2 aria-hidden="true" className="size-4" />
+        <span className="sr-only md:not-sr-only">Supprimer</span>
+      </Button>
+      {!expired && (
         // Sur mobile, la flèche seule : le libellé reste lu par les lecteurs d'écran.
         <Link
           to={paths.download(file.downloadToken)}

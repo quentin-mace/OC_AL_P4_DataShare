@@ -219,11 +219,13 @@ Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la
 
 ```tsx
 <ul className="flex flex-col gap-3">
-  {files.map((file) => <FileRow key={file.id} file={file} />)}
+  {files.map((file) => <FileRow key={file.id} file={file} onDelete={setToDelete} />)}
 </ul>
 ```
 
-Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien. L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
+Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe, un bouton "Supprimer" et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien.
+
+"Supprimer" appelle `onDelete` avec le fichier, sans rien supprimer : la confirmation revient à la page (`DeleteFileDialog`). Il figure aussi sur une ligne expirée, contrairement à la maquette desktop, qui le réserve aux fichiers actifs : c'est le seul moyen de retirer de l'historique un fichier dont l'objet a été purgé, l'historique n'étant borné par rien d'autre (voir `architectureDecisions/auto_expiration.md`). L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
 
 ### DeleteFileDialog
 
@@ -307,7 +309,7 @@ import { Trash2 } from 'lucide-react'
 
 ## Responsive
 
-Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`) et remplacée par `MobileMenu`, un `<dialog>` latéral ouvert par le burger (`md:hidden`). Les liens de navigation vivent dans `SidebarNav`, partagé par les deux : un lien ajouté à l'espace personnel s'ajoute là. Dans une ligne de l'historique, le libellé "Accéder" n'est visible qu'à partir de `md:` (`sr-only md:not-sr-only`), la flèche seule reste sur mobile.
+Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`) et remplacée par `MobileMenu`, un `<dialog>` latéral ouvert par le burger (`md:hidden`). Les liens de navigation vivent dans `SidebarNav`, partagé par les deux : un lien ajouté à l'espace personnel s'ajoute là. Dans une ligne de l'historique, les libellés "Supprimer" et "Accéder" ne sont visibles qu'à partir de `md:` (`sr-only md:not-sr-only`), la corbeille et la flèche seules restent sur mobile. La maquette mobile regroupe ces actions derrière un bouton "⋮" : des boutons directs évitent un menu déroulant et son schéma clavier ARIA, pour deux actions seulement.
 
 ## Accessibilité
 

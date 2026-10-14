@@ -30,10 +30,16 @@ const uploaded: UploadedFile = {
   tags: [],
 }
 
-// Remplace le réseau : GET /files renvoie listReply, POST /files réussit toujours.
+// Remplace le réseau : GET /files renvoie listReply, POST /files et DELETE
+// /files/{id} réussissent toujours.
+const replies: Record<string, Reply> = {
+  post: { status: 201, data: uploaded },
+  delete: { status: 204 },
+}
+
 const adapter: AxiosAdapter = async (config) => {
   sent(config)
-  const reply = config.method === 'post' ? { status: 201, data: uploaded } : listReply
+  const reply = replies[config.method ?? ''] ?? listReply
   const response = { data: [], headers: {}, ...reply, statusText: '', config }
   if (reply.status >= 400) {
     throw new AxiosError('Request failed', undefined, config, null, response)
@@ -75,6 +81,15 @@ const rowNames = () =>
     .map((row) => row.querySelector('[title]')?.getAttribute('title'))
 const listCalls = () => sent.mock.calls.filter(([config]) => config.method === 'get').length
 const chooseFilter = (name: string) => userEvent.click(screen.getByRole('radio', { name }))
+const deleteCalls = () => sent.mock.calls.filter(([config]) => config.method === 'delete')
+const askToDelete = (name: string) =>
+  userEvent.click(
+    within(screen.getByText(name).closest('li')!).getByRole('button', { name: 'Supprimer' }),
+  )
+const confirmDeletion = () =>
+  userEvent.click(
+    within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Supprimer' }),
+  )
 
 describe('FilesPage', () => {
   beforeEach(() => {
@@ -203,5 +218,54 @@ describe('FilesPage', () => {
 
     await waitFor(() => expect(rowNames()).toEqual(['nouveau.pdf', 'compo2.mp3']))
     expect(listCalls()).toBe(2)
+  })
+
+  it('deletes a file once confirmed, without reloading the list', async () => {
+    renderFilesPage()
+    await screen.findByText('compo2.mp3')
+
+    await askToDelete('compo2.mp3')
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleDescription(/^compo2\.mp3/)
+    await confirmDeletion()
+
+    await waitFor(() => expect(rowNames()).toEqual(['vacances.mp4']))
+    const [deletedFile] = listReply.data as FileHistoryItem[]
+    expect(deleteCalls().map(([config]) => config.url)).toEqual([`/files/${deletedFile.id}`])
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Le fichier compo2.mp3 a été supprimé.')
+    expect(listCalls()).toBe(1)
+  })
+
+  it('moves the focus to the title once the row is gone', async () => {
+    renderFilesPage()
+    await screen.findByText('compo2.mp3')
+
+    await askToDelete('compo2.mp3')
+    await confirmDeletion()
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mes fichiers' })).toHaveFocus())
+  })
+
+  it('deletes an expired file too', async () => {
+    renderFilesPage()
+    await screen.findByText('vacances.mp4')
+
+    await askToDelete('vacances.mp4')
+    await confirmDeletion()
+
+    await waitFor(() => expect(rowNames()).toEqual(['compo2.mp3']))
+    expect(deleteCalls()).toHaveLength(1)
+  })
+
+  it('keeps the file when the deletion is cancelled', async () => {
+    renderFilesPage()
+    await screen.findByText('compo2.mp3')
+
+    await askToDelete('compo2.mp3')
+    await userEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(rowNames()).toEqual(['compo2.mp3', 'vacances.mp4'])
+    expect(deleteCalls()).toHaveLength(0)
   })
 })
