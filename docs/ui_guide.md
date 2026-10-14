@@ -136,8 +136,11 @@ import { Button } from '../components/ui/Button'
 | Variante | Usage | Annonce aux lecteurs d'écran |
 |---|---|---|
 | `info` (défaut) | information neutre (durée de vie restante) | à la prochaine pause (`role="status"`) |
+| `success` | action réussie (fichier supprimé) | à la prochaine pause (`role="status"`) |
 | `warning` | échéance proche | à la prochaine pause (`role="status"`) |
 | `error` | action impossible (lien expiré, mot de passe faux) | immédiatement (`role="alert"`) |
+
+La maquette ne dessine que `info`, `warning` et `error`. `success` en reprend la construction (fond pâle, bordure, texte et icône foncés), en vert, avec l'icône `CircleCheck`.
 
 Un callout est un message en réponse à une situation, pas une décoration. Pour un champ invalide, utiliser `error` sur le champ plutôt qu'un callout.
 
@@ -177,6 +180,8 @@ const [open, setOpen] = useState(false)
 - Composant contrôlé : Échap et le bouton "Fermer" appellent `onClose`, c'est le parent qui passe `open` à `false`.
 - `title` devient le titre (`h2`) et le nom accessible de la modale.
 - Fermée, la modale n'est pas rendue : son contenu repart de zéro à chaque ouverture.
+- Une demande de confirmation passe `role="alertdialog"` et `descriptionId`, l'`id` du message qui la décrit, annoncé après le titre (voir `DeleteFileDialog`).
+- `initialFocus` désigne l'élément focalisé à l'ouverture, par défaut le bouton "Fermer". Une confirmation destructrice le pose sur "Annuler", le choix sans conséquence. `autoFocus` ne convient pas : React l'applique avant `showModal()`, qui le remplace.
 - Dans les tests, jsdom n'implémente pas `showModal()` : `src/test/setup.ts` le remplace par la simple pose de l'attribut `open`. La touche Échap se simule avec un événement `cancel` sur la modale.
 
 ### FileField
@@ -217,11 +222,28 @@ Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la
 
 ```tsx
 <ul className="flex flex-col gap-3">
-  {files.map((file) => <FileRow key={file.id} file={file} />)}
+  {files.map((file) => <FileRow key={file.id} file={file} onDelete={setToDelete} />)}
 </ul>
 ```
 
-Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien. L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
+Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe, un bouton "Supprimer" et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien.
+
+"Supprimer" appelle `onDelete` avec le fichier, sans rien supprimer : la confirmation revient à la page (`DeleteFileDialog`). Il figure aussi sur une ligne expirée, contrairement à la maquette desktop, qui le réserve aux fichiers actifs : c'est le seul moyen de retirer de l'historique un fichier dont l'objet a été purgé, l'historique n'étant borné par rien d'autre (voir `architectureDecisions/auto_expiration.md`). L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
+
+### DeleteFileDialog
+
+```tsx
+const [toDelete, setToDelete] = useState<FileHistoryItem | null>(null)
+
+<DeleteFileDialog file={toDelete} onClose={() => setToDelete(null)} onDeleted={handleDeleted} />
+```
+
+Confirmation de suppression (US06, `src/components/files/`), construite sur `Modal` en `alertdialog` : le titre "Supprimer ce fichier ?" la nomme, le message la décrit. Il dépend de l'état du fichier : un fichier actif sera supprimé définitivement et son lien ne fonctionnera plus, un fichier expiré, qui n'a plus d'objet stocké ni de lien, ne sera simplement plus affiché dans l'historique.
+
+- Ouverte tant que `file` n'est pas `null`. Le focus arrive sur "Annuler", le choix sans conséquence, et revient au bouton d'origine si l'utilisateur renonce.
+- Elle appelle elle-même `deleteFile`, pour qui un 404 vaut succès : le fichier n'existe déjà plus. Toute autre erreur s'affiche dans la modale, qui reste ouverte, et le focus revient sur "Annuler".
+- Pendant la requête, les boutons sont désactivés et la modale ne se ferme pas (Échap compris) : fermer laisserait croire à une annulation.
+- `onDeleted` ne ferme pas la modale. Le parent retire le fichier de sa liste, ferme, puis place le focus : le bouton qui avait ouvert la modale a disparu avec sa ligne.
 
 ### Header
 
@@ -290,7 +312,7 @@ import { Trash2 } from 'lucide-react'
 
 ## Responsive
 
-Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`) et remplacée par `MobileMenu`, un `<dialog>` latéral ouvert par le burger (`md:hidden`). Les liens de navigation vivent dans `SidebarNav`, partagé par les deux : un lien ajouté à l'espace personnel s'ajoute là. Dans une ligne de l'historique, le libellé "Accéder" n'est visible qu'à partir de `md:` (`sr-only md:not-sr-only`), la flèche seule reste sur mobile.
+Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`) et remplacée par `MobileMenu`, un `<dialog>` latéral ouvert par le burger (`md:hidden`). Les liens de navigation vivent dans `SidebarNav`, partagé par les deux : un lien ajouté à l'espace personnel s'ajoute là. Dans une ligne de l'historique, les libellés "Supprimer" et "Accéder" ne sont visibles qu'à partir de `md:` (`sr-only md:not-sr-only`), la corbeille et la flèche seules restent sur mobile. La maquette mobile regroupe ces actions derrière un bouton "⋮" : des boutons directs évitent un menu déroulant et son schéma clavier ARIA, pour deux actions seulement.
 
 ## Accessibilité
 
@@ -314,7 +336,7 @@ Plusieurs couples de couleurs des maquettes sont sous le seuil WCAG AA (4,5:1 po
 | `white` sur `brand-to` | 3,5 | copyright en bas du dégradé |
 | `placeholder` sur `surface` | 2,1 | placeholder des champs |
 
-Les couples `ink-muted` sur `surface` (16,7), `white` sur `dark` (14), `info-ink`, `error-ink` et `danger` (4,98 à 8,6) sont conformes. Les éléments désactivés ne sont pas soumis au seuil.
+Les couples `ink-muted` sur `surface` (16,7), `white` sur `dark` (14), `info-ink`, `success-ink`, `error-ink` et `danger` (4,98 à 8,6) sont conformes. Les éléments désactivés ne sont pas soumis au seuil.
 
 Foncer `accent` et `coral` suffirait à corriger l'essentiel, en changeant deux lignes de `src/index.css`. C'est l'intérêt des tokens sémantiques.
 

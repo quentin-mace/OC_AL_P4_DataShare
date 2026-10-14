@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FileHistoryItem } from '../../api/files'
@@ -21,11 +22,11 @@ function file(overrides: Partial<FileHistoryItem> = {}): FileHistoryItem {
   }
 }
 
-function renderRow(item: FileHistoryItem) {
+function renderRow(item: FileHistoryItem, onDelete = vi.fn<(file: FileHistoryItem) => void>()) {
   render(
     <MemoryRouter>
       <ul>
-        <FileRow file={item} />
+        <FileRow file={item} onDelete={onDelete} />
       </ul>
     </MemoryRouter>,
   )
@@ -77,5 +78,25 @@ describe('FileRow', () => {
       screen.getByText("Ce fichier a expiré, il n'est plus stocké chez nous"),
     ).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('asks to delete an active file', async () => {
+    const onDelete = vi.fn<(file: FileHistoryItem) => void>()
+    const item = file()
+    renderRow(item, onDelete)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+
+    expect(onDelete).toHaveBeenCalledExactlyOnceWith(item)
+  })
+
+  it('asks to delete an expired file too', async () => {
+    const onDelete = vi.fn<(file: FileHistoryItem) => void>()
+    const item = file({ status: 'expired', expiresAt: new Date(2026, 9, 10).toISOString() })
+    renderRow(item, onDelete)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+
+    expect(onDelete).toHaveBeenCalledExactlyOnceWith(item)
   })
 })

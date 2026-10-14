@@ -9,6 +9,12 @@ describe('Callout', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Ce fichier expirera dans 3 jours.')
   })
 
+  it('announces a success politely', () => {
+    render(<Callout variant="success">Le fichier a été supprimé.</Callout>)
+
+    expect(screen.getByRole('status')).toHaveClass('bg-success-soft')
+  })
+
   it('announces a warning politely', () => {
     render(<Callout variant="warning">Ce fichier expirera demain.</Callout>)
 

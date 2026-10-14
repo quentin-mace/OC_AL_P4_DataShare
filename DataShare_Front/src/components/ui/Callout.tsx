@@ -1,11 +1,15 @@
-import { CircleAlert, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { joinClassNames } from './joinClassNames'
 
-export type CalloutVariant = 'info' | 'warning' | 'error'
+export type CalloutVariant = 'info' | 'success' | 'warning' | 'error'
 
 const variants: Record<CalloutVariant, { icon: LucideIcon; className: string }> = {
   info: { icon: Info, className: 'border-info-border bg-info-soft text-info-ink' },
+  success: {
+    icon: CircleCheck,
+    className: 'border-success-border bg-success-soft text-success-ink',
+  },
   warning: {
     icon: TriangleAlert,
     className: 'border-warning-border bg-warning-soft text-warning-ink',

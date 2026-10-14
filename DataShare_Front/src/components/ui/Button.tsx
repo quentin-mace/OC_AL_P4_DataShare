@@ -1,8 +1,10 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { buttonStyles, type ButtonStyleOptions } from './buttonStyles'
 import { joinClassNames } from './joinClassNames'
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, ButtonStyleOptions {
+// ComponentProps plutôt que ButtonHTMLAttributes : il inclut ref, qu'un parent
+// passe par exemple pour donner le focus initial d'une modale.
+export interface ButtonProps extends ComponentProps<'button'>, ButtonStyleOptions {
   leadingIcon?: ReactNode
   trailingIcon?: ReactNode
 }

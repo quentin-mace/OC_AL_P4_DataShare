@@ -53,6 +53,10 @@
   --color-error-soft: #ffe2e2;
   --color-error-border: #edb1b1;
   --color-error-ink: #9c3333;
+  /* Absente de la maquette, dessinée sur le modèle des trois autres. */
+  --color-success-soft: #e3f5e8;
+  --color-success-border: #b3dcbf;
+  --color-success-ink: #2b6a3e;
 
   /* Formes. */
   --radius-control: 6px;
