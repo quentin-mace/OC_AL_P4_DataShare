@@ -101,11 +101,7 @@ export function FilesPage() {
           Impossible de supprimer ce fichier pour le moment, réessayez plus tard.
         </Callout>
       )}
-      {deleted && (
-        <output className="text-sm text-ink-muted">
-          Le fichier {deleted.name} a été supprimé.
-        </output>
-      )}
+      {deleted && <Callout variant="success">Le fichier {deleted.name} a été supprimé.</Callout>}
       <div>
         <Switch
           label="Filtrer les fichiers"

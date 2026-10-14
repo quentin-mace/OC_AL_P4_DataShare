@@ -136,8 +136,11 @@ import { Button } from '../components/ui/Button'
 | Variante | Usage | Annonce aux lecteurs d'écran |
 |---|---|---|
 | `info` (défaut) | information neutre (durée de vie restante) | à la prochaine pause (`role="status"`) |
+| `success` | action réussie (fichier supprimé) | à la prochaine pause (`role="status"`) |
 | `warning` | échéance proche | à la prochaine pause (`role="status"`) |
 | `error` | action impossible (lien expiré, mot de passe faux) | immédiatement (`role="alert"`) |
+
+La maquette ne dessine que `info`, `warning` et `error`. `success` en reprend la construction (fond pâle, bordure, texte et icône foncés), en vert, avec l'icône `CircleCheck`.
 
 Un callout est un message en réponse à une situation, pas une décoration. Pour un champ invalide, utiliser `error` sur le champ plutôt qu'un callout.
 
@@ -334,7 +337,7 @@ Plusieurs couples de couleurs des maquettes sont sous le seuil WCAG AA (4,5:1 po
 | `white` sur `brand-to` | 3,5 | copyright en bas du dégradé |
 | `placeholder` sur `surface` | 2,1 | placeholder des champs |
 
-Les couples `ink-muted` sur `surface` (16,7), `white` sur `dark` (14), `info-ink`, `error-ink` et `danger` (4,98 à 8,6) sont conformes. Les éléments désactivés ne sont pas soumis au seuil.
+Les couples `ink-muted` sur `surface` (16,7), `white` sur `dark` (14), `info-ink`, `success-ink`, `error-ink` et `danger` (4,98 à 8,6) sont conformes. Les éléments désactivés ne sont pas soumis au seuil.
 
 Foncer `accent` et `coral` suffirait à corriger l'essentiel, en changeant deux lignes de `src/index.css`. C'est l'intérêt des tokens sémantiques.
 
