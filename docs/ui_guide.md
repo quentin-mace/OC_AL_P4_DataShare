@@ -228,7 +228,7 @@ Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la
 
 Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe, un bouton "Supprimer" et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien.
 
-"Supprimer" appelle `onDelete` avec le fichier, sans rien supprimer : la page décide de la suite. Dans "Mes fichiers", un fichier actif passe par la confirmation (`DeleteFileDialog`), un fichier expiré est supprimé directement : sans objet stocké ni lien qui fonctionne, il ne reste qu'une ligne d'historique, rien d'irréversible à confirmer. Une erreur s'affiche alors en haut de la page. Il figure aussi sur une ligne expirée, contrairement à la maquette desktop, qui le réserve aux fichiers actifs : c'est le seul moyen de retirer de l'historique un fichier dont l'objet a été purgé, l'historique n'étant borné par rien d'autre (voir `architectureDecisions/auto_expiration.md`). L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
+"Supprimer" appelle `onDelete` avec le fichier, sans rien supprimer : la confirmation revient à la page (`DeleteFileDialog`). Il figure aussi sur une ligne expirée, contrairement à la maquette desktop, qui le réserve aux fichiers actifs : c'est le seul moyen de retirer de l'historique un fichier dont l'objet a été purgé, l'historique n'étant borné par rien d'autre (voir `architectureDecisions/auto_expiration.md`). L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
 
 ### DeleteFileDialog
 
@@ -238,10 +238,9 @@ const [toDelete, setToDelete] = useState<FileHistoryItem | null>(null)
 <DeleteFileDialog file={toDelete} onClose={() => setToDelete(null)} onDeleted={handleDeleted} />
 ```
 
-Confirmation de suppression (US06, `src/components/files/`), construite sur `Modal` en `alertdialog` : le titre "Supprimer ce fichier ?" la nomme, le message (nom du fichier, action irréversible) la décrit.
+Confirmation de suppression (US06, `src/components/files/`), construite sur `Modal` en `alertdialog` : le titre "Supprimer ce fichier ?" la nomme, le message la décrit. Il dépend de l'état du fichier : un fichier actif sera supprimé définitivement et son lien ne fonctionnera plus, un fichier expiré, qui n'a plus d'objet stocké ni de lien, ne sera simplement plus affiché dans l'historique.
 
 - Ouverte tant que `file` n'est pas `null`. Le focus arrive sur "Annuler", le choix sans conséquence, et revient au bouton d'origine si l'utilisateur renonce.
-- Réservée aux fichiers actifs, d'où son message sur le lien de partage.
 - Elle appelle elle-même `deleteFile`, pour qui un 404 vaut succès : le fichier n'existe déjà plus. Toute autre erreur s'affiche dans la modale, qui reste ouverte, et le focus revient sur "Annuler".
 - Pendant la requête, les boutons sont désactivés et la modale ne se ferme pas (Échap compris) : fermer laisserait croire à une annulation.
 - `onDeleted` ne ferme pas la modale. Le parent retire le fichier de sa liste, ferme, puis place le focus : le bouton qui avait ouvert la modale a disparu avec sa ligne.

@@ -59,10 +59,13 @@ export function DeleteFileDialog({ file, onClose, onDeleted }: DeleteFileDialogP
     >
       {file && (
         <div className="flex flex-col gap-4">
+          {/* Un fichier expiré n'a plus d'objet stocké ni de lien qui fonctionne :
+              seule sa ligne d'historique reste à retirer. */}
           <p id={messageId} className="text-sm">
-            <span className="font-semibold break-all text-ink">{file.name}</span> sera supprimé
-            définitivement, et son lien de partage ne fonctionnera plus. Cette action est
-            irréversible.
+            <span className="font-semibold break-all text-ink">{file.name}</span>
+            {file.status === 'active'
+              ? ' sera supprimé définitivement, et son lien de partage ne fonctionnera plus. Cette action est irréversible.'
+              : ' a expiré et ne sera plus affiché dans votre historique.'}
           </p>
           {failed && (
             <Callout variant="error">

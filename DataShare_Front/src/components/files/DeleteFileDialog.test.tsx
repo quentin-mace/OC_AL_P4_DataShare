@@ -71,6 +71,20 @@ describe('DeleteFileDialog', () => {
     expect(dialog).toHaveAccessibleDescription(/Cette action est irréversible\.$/)
   })
 
+  it('only mentions the history for an expired file', () => {
+    render(
+      <DeleteFileDialog
+        file={{ ...file, status: 'expired' }}
+        onClose={() => {}}
+        onDeleted={() => {}}
+      />,
+    )
+
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleDescription(
+      'compo2.mp3 a expiré et ne sera plus affiché dans votre historique.',
+    )
+  })
+
   it('focuses the harmless choice first', () => {
     renderDialog()
 

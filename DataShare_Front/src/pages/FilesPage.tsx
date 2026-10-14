@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router'
-import { deleteFile, listFiles, type FileHistoryItem } from '../api/files'
+import { listFiles, type FileHistoryItem } from '../api/files'
 import { DeleteFileDialog } from '../components/files/DeleteFileDialog'
 import { FileRow } from '../components/files/FileRow'
 import type { DashboardContext } from '../components/layout/DashboardLayout'
@@ -31,7 +31,6 @@ export function FilesPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [toDelete, setToDelete] = useState<FileHistoryItem | null>(null)
   const [deleted, setDeleted] = useState<FileHistoryItem | null>(null)
-  const [deleteFailed, setDeleteFailed] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
 
   // Le bouton Supprimer a disparu avec sa ligne : le focus, que la modale lui
@@ -59,26 +58,6 @@ export function FilesPage() {
     setVisibleCount(PAGE_SIZE)
   }
 
-  // Un fichier actif passe par une confirmation. Un fichier expiré n'a plus
-  // d'objet stocké ni de lien qui fonctionne : le supprimer ne retire qu'une
-  // ligne d'historique, sans rien d'irréversible à confirmer.
-  async function requestDeletion(file: FileHistoryItem) {
-    if (file.status === 'active') {
-      setToDelete(file)
-      return
-    }
-    setDeleteFailed(false)
-    try {
-      await deleteFile(file.id)
-    } catch {
-      // Le message d'une suppression précédente ne doit pas rester à côté.
-      setDeleted(null)
-      setDeleteFailed(true)
-      return
-    }
-    handleDeleted(file)
-  }
-
   // Retrait local, sans recharger : la liste est déjà entière côté client.
   function handleDeleted(file: FileHistoryItem) {
     setState((current) =>
@@ -87,7 +66,6 @@ export function FilesPage() {
         : current,
     )
     setToDelete(null)
-    setDeleteFailed(false)
     setDeleted(file)
   }
 
@@ -96,11 +74,6 @@ export function FilesPage() {
       <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold text-ink">
         Mes fichiers
       </h1>
-      {deleteFailed && (
-        <Callout variant="error">
-          Impossible de supprimer ce fichier pour le moment, réessayez plus tard.
-        </Callout>
-      )}
       {deleted && <Callout variant="success">Le fichier {deleted.name} a été supprimé.</Callout>}
       <div>
         <Switch
@@ -124,7 +97,7 @@ export function FilesPage() {
           filter={filter}
           visibleCount={visibleCount}
           onShowMore={() => setVisibleCount((count) => count + PAGE_SIZE)}
-          onDelete={(file) => void requestDeletion(file)}
+          onDelete={setToDelete}
         />
       )}
       <DeleteFileDialog
