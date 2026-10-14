@@ -177,6 +177,8 @@ const [open, setOpen] = useState(false)
 - Composant contrôlé : Échap et le bouton "Fermer" appellent `onClose`, c'est le parent qui passe `open` à `false`.
 - `title` devient le titre (`h2`) et le nom accessible de la modale.
 - Fermée, la modale n'est pas rendue : son contenu repart de zéro à chaque ouverture.
+- Une demande de confirmation passe `role="alertdialog"` et `descriptionId`, l'`id` du message qui la décrit, annoncé après le titre (voir `DeleteFileDialog`).
+- `initialFocus` désigne l'élément focalisé à l'ouverture, par défaut le bouton "Fermer". Une confirmation destructrice le pose sur "Annuler", le choix sans conséquence. `autoFocus` ne convient pas : React l'applique avant `showModal()`, qui le remplace.
 - Dans les tests, jsdom n'implémente pas `showModal()` : `src/test/setup.ts` le remplace par la simple pose de l'attribut `open`. La touche Échap se simule avec un événement `cancel` sur la modale.
 
 ### FileField
