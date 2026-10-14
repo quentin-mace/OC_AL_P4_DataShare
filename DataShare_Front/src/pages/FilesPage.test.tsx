@@ -106,6 +106,7 @@ describe('FilesPage', () => {
     vi.useRealTimers()
     apiClient.defaults.adapter = undefined
     sent.mockReset()
+    replies.delete = { status: 204 }
     useAuthStore.setState({ token: null, sessionExpired: false })
     localStorage.clear()
   })
@@ -246,15 +247,30 @@ describe('FilesPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Mes fichiers' })).toHaveFocus())
   })
 
-  it('deletes an expired file too', async () => {
+  it('deletes an expired file without asking for a confirmation', async () => {
     renderFilesPage()
     await screen.findByText('vacances.mp4')
 
     await askToDelete('vacances.mp4')
-    await confirmDeletion()
 
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     await waitFor(() => expect(rowNames()).toEqual(['compo2.mp3']))
     expect(deleteCalls()).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('Le fichier vacances.mp4 a été supprimé.')
+    expect(screen.getByRole('heading', { name: 'Mes fichiers' })).toHaveFocus()
+  })
+
+  it('reports a failed deletion of an expired file and keeps it', async () => {
+    replies.delete = { status: 500 }
+    renderFilesPage()
+    await screen.findByText('vacances.mp4')
+
+    await askToDelete('vacances.mp4')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Impossible de supprimer ce fichier pour le moment, réessayez plus tard.',
+    )
+    expect(rowNames()).toEqual(['compo2.mp3', 'vacances.mp4'])
   })
 
   it('keeps the file when the deletion is cancelled', async () => {

@@ -1,7 +1,6 @@
 import { Trash2 } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { deleteFile, type FileHistoryItem } from '../../api/files'
-import { getStatus } from '../../api/problem'
 import { Button } from '../ui/Button'
 import { Callout } from '../ui/Callout'
 import { Modal } from '../ui/Modal'
@@ -40,12 +39,9 @@ export function DeleteFileDialog({ file, onClose, onDeleted }: DeleteFileDialogP
     setFailed(false)
     try {
       await deleteFile(target.id)
-    } catch (error) {
-      // Un 404 dit que le fichier n'existe déjà plus : c'est le résultat voulu.
-      if (getStatus(error) !== 404) {
-        setFailed(true)
-        return
-      }
+    } catch {
+      setFailed(true)
+      return
     } finally {
       setPending(false)
     }

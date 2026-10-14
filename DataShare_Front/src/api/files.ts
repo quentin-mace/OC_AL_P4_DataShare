@@ -1,6 +1,7 @@
 import type { AxiosProgressEvent } from 'axios'
 import type { UploadFormValues } from '../validation/uploadSchema'
 import { apiClient } from './client'
+import { getStatus } from './problem'
 
 /** Fichier tel que renvoyé par POST /files (201). */
 export interface UploadedFile {
@@ -73,7 +74,12 @@ export async function listFiles({ signal }: { signal?: AbortSignal } = {}): Prom
 /**
  * Supprime un fichier du compte connecté, objet stocké compris (US06). Un
  * fichier expiré se supprime aussi : il ne reste alors que sa ligne d'historique.
+ * Un 404 vaut succès, le fichier n'existe déjà plus : c'est le résultat voulu.
  */
 export async function deleteFile(id: number): Promise<void> {
-  await apiClient.delete(`/files/${id}`)
+  try {
+    await apiClient.delete(`/files/${id}`)
+  } catch (error) {
+    if (getStatus(error) !== 404) throw error
+  }
 }
