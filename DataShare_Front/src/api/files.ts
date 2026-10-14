@@ -69,3 +69,11 @@ export async function listFiles({ signal }: { signal?: AbortSignal } = {}): Prom
   const { data } = await apiClient.get<FileHistoryItem[]>('/files', { signal })
   return data
 }
+
+/**
+ * Supprime un fichier du compte connecté, objet stocké compris (US06). Un
+ * fichier expiré se supprime aussi : il ne reste alors que sa ligne d'historique.
+ */
+export async function deleteFile(id: number): Promise<void> {
+  await apiClient.delete(`/files/${id}`)
+}
