@@ -6,11 +6,11 @@ import { uploadFile, type UploadedFile } from '../../api/files'
 import { getStatus, getViolations, type Violation } from '../../api/problem'
 import {
   DOWNLOAD_PASSWORD_MIN_LENGTH,
-  TAG_MAX_LENGTH,
   uploadSchema,
   type UploadFormInput,
   type UploadFormValues,
 } from '../../validation/uploadSchema'
+import { TAG_MAX_LENGTH } from '../../validation/tagSchema'
 import { Button } from '../ui/Button'
 import { Callout } from '../ui/Callout'
 import { FileField } from '../ui/FileField'

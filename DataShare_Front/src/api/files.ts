@@ -83,3 +83,31 @@ export async function deleteFile(id: number): Promise<void> {
     if (getStatus(error) !== 404) throw error
   }
 }
+
+/** État des tags d'un fichier après une opération sur ses tags (US08). */
+export interface FileTags {
+  id: number
+  tags: string[]
+}
+
+// Le tag est désigné par son nom, encodé dans l'URL, et non par un identifiant :
+// voir contrat-api.md.
+const tagUrl = (id: number, tag: string) => `/files/${id}/tags/${encodeURIComponent(tag)}`
+
+/** Ajoute un tag au fichier ; un nom déjà connu du compte réutilise ce tag. */
+export async function addTag(id: number, tag: string): Promise<FileTags> {
+  const { data } = await apiClient.post<FileTags>(`/files/${id}/tags`, { tag })
+  return data
+}
+
+/** Renomme un tag sur ce fichier seulement : les autres fichiers gardent l'ancien nom. */
+export async function renameTag(id: number, tag: string, newTag: string): Promise<FileTags> {
+  const { data } = await apiClient.put<FileTags>(tagUrl(id, tag), { tag: newTag })
+  return data
+}
+
+/** Retire un tag du fichier ; un tag qui ne porte plus aucun fichier disparaît du compte. */
+export async function removeTag(id: number, tag: string): Promise<FileTags> {
+  const { data } = await apiClient.delete<FileTags>(tagUrl(id, tag))
+  return data
+}

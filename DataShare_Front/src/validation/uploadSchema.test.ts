@@ -92,6 +92,12 @@ describe('uploadSchema', () => {
     ])
   })
 
+  it('rejects a tag with a slash', () => {
+    expect(messagesFor({ tags: 'facture, 2026/10' })).toEqual([
+      ['tags', 'Un tag ne peut pas contenir de "/" ("2026/10").'],
+    ])
+  })
+
   it('rejects a duplicated tag', () => {
     expect(messagesFor({ tags: 'facture, facture ' })).toEqual([
       ['tags', 'Un même tag ne peut pas être saisi deux fois.'],

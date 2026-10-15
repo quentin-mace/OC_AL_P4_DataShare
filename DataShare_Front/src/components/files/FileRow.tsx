@@ -1,23 +1,28 @@
-import { ArrowRight, Lock, Trash2 } from 'lucide-react'
+import { ArrowRight, Lock, Tag as TagIcon, Trash2 } from 'lucide-react'
 import { Link } from 'react-router'
 import type { FileHistoryItem } from '../../api/files'
 import { daysUntil, expirationLabel } from '../../format/expiration'
 import { paths } from '../../routes/paths'
 import { Button } from '../ui/Button'
 import { buttonStyles } from '../ui/buttonStyles'
+import { Tag } from '../ui/Tag'
 import { FileTypeIcon } from './FileTypeIcon'
 
 export interface FileRowProps {
   file: FileHistoryItem
   /** Demande la suppression du fichier ; la confirmation revient à la page. */
   onDelete: (file: FileHistoryItem) => void
+  /** Ouvre l'édition des tags du fichier ; la modale revient à la page. */
+  onEditTags: (file: FileHistoryItem) => void
+  /** Filtre l'historique sur un tag, choisi en cliquant sa pastille. */
+  onTagSelect: (tag: string) => void
 }
 
 /**
- * Une ligne de l'historique (US05) : type, nom, échéance, cadenas, suppression
- * (US06) et lien de partage.
+ * Une ligne de l'historique (US05) : type, nom, échéance, tags (US08),
+ * cadenas, suppression (US06) et lien de partage.
  */
-export function FileRow({ file, onDelete }: FileRowProps) {
+export function FileRow({ file, onDelete, onEditTags, onTagSelect }: FileRowProps) {
   // L'état vient de l'API, seule à faire foi ; l'échéance n'est qu'un libellé.
   const expired = file.status === 'expired'
 
@@ -33,6 +38,19 @@ export function FileRow({ file, onDelete }: FileRowProps) {
         ) : (
           <p className="text-xs">{expirationLabel(daysUntil(file.expiresAt))}</p>
         )}
+        {file.tags.length > 0 && (
+          <ul aria-label="Tags" className="mt-1 flex flex-wrap gap-1">
+            {file.tags.map((tag) => (
+              <li key={tag} className="max-w-full">
+                <Tag
+                  name={tag}
+                  onClick={() => onTagSelect(tag)}
+                  clickLabel={`Filtrer sur le tag ${tag}`}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       {file.hasPassword && (
         <span title="Protégé par mot de passe" className="shrink-0">
@@ -45,6 +63,11 @@ export function FileRow({ file, onDelete }: FileRowProps) {
           Ce fichier a expiré, il n'est plus stocké chez nous
         </p>
       )}
+      {/* Sur mobile, l'icône seule, comme pour "Supprimer" et "Accéder". */}
+      <Button variant="outline" size="sm" onClick={() => onEditTags(file)}>
+        <TagIcon aria-hidden="true" className="size-4" />
+        <span className="sr-only md:not-sr-only">Tags</span>
+      </Button>
       {/* Aussi sur une ligne expirée, contrairement à la maquette : c'est le seul
           moyen de retirer de l'historique un fichier dont l'objet a été purgé.
           Sur mobile, l'icône seule, comme la flèche d'"Accéder" ci-dessous. */}

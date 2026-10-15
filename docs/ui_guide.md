@@ -165,6 +165,21 @@ const [filter, setFilter] = useState<'all' | 'active' | 'expired'>('all')
 
 Composant contrôlé : l'état vit dans la page. Le `label` n'est pas affiché mais annoncé, il doit dire ce que l'on filtre. Construit sur des boutons radio natifs, il se pilote aux flèches du clavier.
 
+### Tag
+
+```tsx
+<Tag name="facture" />
+<Tag name="facture" onClick={() => setTagFilter('facture')} clickLabel="Filtrer sur le tag facture" />
+<Tag name="facture" onRemove={clearFilter} removeLabel="Retirer le filtre sur le tag facture" />
+```
+
+Pastille d'un tag (US08), en `accent-soft` bordé d'`accent-border`, comme le bouton `tinted`. Aucune maquette ne dessine de tags : la pastille reprend les tokens existants sans en créer.
+
+- Sans `onClick`, simple texte. Avec, un `<button>` dont `clickLabel` donne le nom accessible : il doit contenir le nom du tag, que l'utilisateur voit et peut dicter.
+- `disabled` désactive la pastille cliquable, par exemple pendant une requête.
+- `onRemove` ajoute une croix, bouton distinct nommé par `removeLabel` (par défaut "Retirer facture").
+- Un nom long est tronqué à la largeur disponible, et reste lisible en entier au survol (`title`).
+
 ### Modal
 
 Fenêtre modale sur `<dialog>` natif, ouverte par `showModal()` : le focus y reste piégé, l'arrière-plan devient inerte, Échap la ferme et le focus revient au bouton d'origine.
@@ -221,12 +236,22 @@ Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la
 ### FileRow
 
 ```tsx
-<ul className="flex flex-col gap-3">
-  {files.map((file) => <FileRow key={file.id} file={file} onDelete={setToDelete} />)}
+<ul aria-labelledby={headingId} className="flex flex-col gap-3">
+  {files.map((file) => (
+    <FileRow
+      key={file.id}
+      file={file}
+      onDelete={setToDelete}
+      onEditTags={(file) => setEditingId(file.id)}
+      onTagSelect={changeTagFilter}
+    />
+  ))}
 </ul>
 ```
 
-Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe, un bouton "Supprimer" et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien.
+Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", ses tags, un cadenas s'il a un mot de passe, un bouton "Tags", un bouton "Supprimer" et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien.
+
+Les tags sont une liste (`<ul aria-label="Tags">`) de pastilles `Tag` cliquables : un clic appelle `onTagSelect` avec le nom du tag, et la page filtre l'historique sur lui. Chaque ligne contenant sa propre liste, la liste de l'historique est nommée par le titre de la page (`aria-labelledby`), ce qui permet de l'atteindre sans ambiguïté, en test comme au lecteur d'écran.
 
 "Supprimer" appelle `onDelete` avec le fichier, sans rien supprimer : la confirmation revient à la page (`DeleteFileDialog`). Il figure aussi sur une ligne expirée, contrairement à la maquette desktop, qui le réserve aux fichiers actifs : c'est le seul moyen de retirer de l'historique un fichier dont l'objet a été purgé, l'historique n'étant borné par rien d'autre (voir `architectureDecisions/auto_expiration.md`). L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
 
@@ -244,6 +269,31 @@ Confirmation de suppression (US06, `src/components/files/`), construite sur `Mod
 - Elle appelle elle-même `deleteFile`, pour qui un 404 vaut succès : le fichier n'existe déjà plus. Toute autre erreur s'affiche dans la modale, qui reste ouverte, et le focus revient sur "Annuler".
 - Pendant la requête, les boutons sont désactivés et la modale ne se ferme pas (Échap compris) : fermer laisserait croire à une annulation.
 - `onDeleted` ne ferme pas la modale. Le parent retire le fichier de sa liste, ferme, puis place le focus : le bouton qui avait ouvert la modale a disparu avec sa ligne.
+
+### EditTagsDialog
+
+```tsx
+const [editingId, setEditingId] = useState<number | null>(null)
+const editing = files.find(({ id }) => id === editingId) ?? null
+
+<EditTagsDialog
+  file={editing}
+  accountTags={accountTags}
+  onClose={closeTags}
+  onTagsChanged={handleTagsChanged}
+/>
+```
+
+Édition des tags d'un fichier (US08, `src/components/files/`), ouverte par le bouton "Tags" d'une ligne de l'historique, active ou expirée. Elle liste les tags du fichier, chacun avec "Renommer" et "Retirer", et propose un champ "Ajouter un tag".
+
+- **Tags déjà utilisés.** Sous le champ d'ajout, les tags du compte que le fichier ne porte pas encore, en pastilles : un clic ajoute le tag, sans saisie. `accountTags` est l'union des tags de l'historique, triée (`localeCompare` en `fr`). Elle est exacte sans appel dédié, puisque l'historique est chargé en entier et qu'un tag n'existe que tant qu'un fichier le porte (voir `architectureDecisions/tags.md`). Après le clic, le focus va au champ d'ajout : la pastille a disparu (succès) ou était désactivée (échec).
+
+- **Chaque action part aussitôt** (`addTag`, `renameTag`, `removeTag` de `src/api/files.ts`), il n'y a rien à enregistrer en fermant. La liste affichée est celle que renvoie l'API (`{ id, tags }`), remontée par `onTagsChanged` : la page met à jour la ligne sans recharger l'historique. La modale reçoit donc le fichier tiré de la liste de la page, par identifiant, et non une copie figée à l'ouverture.
+- **Validation** par `tagSchema` (`src/validation/tagSchema.ts`) : tag non vide, 30 caractères au plus, sans virgule (le séparateur de l'envoi), sans "/" et absent du fichier. Le "/" est une restriction propre au front, appliquée aussi à l'envoi : le back l'accepte, mais un tag qui en contient un n'est plus adressable par `/files/{id}/tags/{tag}`, donc ni renommable ni retirable (voir `architectureDecisions/tags.md`). Un 422 s'affiche sur le champ, un 404 (fichier ou tag disparu depuis un autre onglet) et toute autre erreur dans un `Callout`. Contrairement à la règle des formulaires (`onTouched`), la validation se fait à la soumission (`mode: 'onSubmit'`), puis à chaque frappe une fois l'erreur affichée : le champ d'ajout a le focus dès l'ouverture, et le quitter vide pour cliquer ailleurs n'est pas une erreur. Le message qui apparaîtrait décalerait aussi la modale sous le pointeur, si bien que le clic visé (une suggestion, "Retirer") tomberait à côté.
+- **Renommage en ligne.** Le champ s'ouvre sur le nom actuel, sélectionné. Entrée valide, Échap ou "Annuler" rendent la ligne sans fermer la modale. Un nom inchangé n'appelle pas l'API. Le renommage ne vaut que pour ce fichier, comme la route.
+- **Focus.** À l'ouverture, sur le champ d'ajout, qui le garde après un ajout pour enchaîner les tags. Après un renommage, sur le bouton "Renommer" du tag renommé ; après un retrait, sur le champ d'ajout, la ligne ayant disparu. Pendant la requête, les champs passent en `readOnly` plutôt qu'en `disabled`, qui leur ferait perdre le focus.
+- Pendant la requête, les boutons sont désactivés et la modale ne se ferme pas (Échap compris).
+- À la fermeture, si la ligne du fichier n'est plus affichée (elle ne porte plus le tag filtré), la page place le focus sur son titre, comme après une suppression. Un tag qui ne porte plus aucun fichier retire de lui-même le filtre posé sur lui.
 
 ### Header
 
@@ -300,19 +350,23 @@ import { Trash2 } from 'lucide-react'
 | Besoin | Icône |
 |---|---|
 | Upload, téléchargement | `CloudUpload` |
-| Supprimer | `Trash2` |
+| Supprimer, retirer un tag | `Trash2` |
+| Tags d'un fichier | `Tag` (importée sous le nom `TagIcon`, `Tag` étant le composant) |
+| Renommer | `Pencil` |
+| Ajouter un tag | `Plus` |
+| Valider une saisie en ligne | `Check` |
 | Accéder | `ArrowRight` |
 | Fichier protégé | `Lock` |
 | Copier le lien | `Copy` |
 | Fichier (sélection, lien créé, téléchargement) | `FileText` |
 | Type de fichier dans l'historique | `FileImage`, `FileMusic`, `FilePlay`, `FileText` par défaut (`FileTypeIcon`) |
-| Fermer une modale | `X` |
+| Fermer une modale, retirer un filtre | `X` |
 | Déconnexion | `LogOut` |
 | Callouts | `Info`, `TriangleAlert`, `CircleAlert` |
 
 ## Responsive
 
-Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`) et remplacée par `MobileMenu`, un `<dialog>` latéral ouvert par le burger (`md:hidden`). Les liens de navigation vivent dans `SidebarNav`, partagé par les deux : un lien ajouté à l'espace personnel s'ajoute là. Dans une ligne de l'historique, les libellés "Supprimer" et "Accéder" ne sont visibles qu'à partir de `md:` (`sr-only md:not-sr-only`), la corbeille et la flèche seules restent sur mobile. La maquette mobile regroupe ces actions derrière un bouton "⋮" : des boutons directs évitent un menu déroulant et son schéma clavier ARIA, pour deux actions seulement.
+Mobile d'abord : les classes sans préfixe visent le mobile, `md:` (768 px) bascule vers la maquette desktop. Exemples déjà en place : copyright masqué sur mobile (`hidden md:block`), sidebar de l'espace personnel masquée sur mobile (`hidden md:flex`) et remplacée par `MobileMenu`, un `<dialog>` latéral ouvert par le burger (`md:hidden`). Les liens de navigation vivent dans `SidebarNav`, partagé par les deux : un lien ajouté à l'espace personnel s'ajoute là. Dans une ligne de l'historique, les libellés "Tags", "Supprimer" et "Accéder" ne sont visibles qu'à partir de `md:` (`sr-only md:not-sr-only`), l'étiquette, la corbeille et la flèche seules restent sur mobile. La maquette mobile regroupe ces actions derrière un bouton "⋮" : des boutons directs évitent un menu déroulant et son schéma clavier ARIA, pour trois actions seulement.
 
 ## Accessibilité
 

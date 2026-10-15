@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { tagRuleMessage } from './tagSchema'
 
 // Mêmes règles que FileUploadInput côté back (#37). Elles n'évitent qu'un
 // aller-retour, coûteux ici puisqu'il porte tout le fichier : le serveur
@@ -24,7 +25,6 @@ export const FORBIDDEN_EXTENSIONS = [
 ]
 
 export const DOWNLOAD_PASSWORD_MIN_LENGTH = 6
-export const TAG_MAX_LENGTH = 30
 
 // Même calcul que pathinfo(PATHINFO_EXTENSION) : ce qui suit le dernier point.
 export function fileExtension(fileName: string): string {
@@ -72,19 +72,14 @@ export const uploadSchema = z.object({
     .string()
     .transform(parseTags)
     .superRefine((tags, context) => {
-      // Assert\All([Length(max: 30)]) puis le callback validateTags.
-      const tooLong = tags.find((tag) => tag.length > TAG_MAX_LENGTH)
-      if (tooLong) {
-        context.addIssue({
-          code: 'custom',
-          message: `Un tag ne peut pas dépasser ${TAG_MAX_LENGTH} caractères ("${tooLong}").`,
-        })
-      } else if (new Set(tags).size !== tags.length) {
-        context.addIssue({
-          code: 'custom',
-          message: 'Un même tag ne peut pas être saisi deux fois.',
-        })
-      }
+      // Assert\All([Length(max: 30)]), le "/" refusé par le front (tagSchema.ts),
+      // puis le callback validateTags.
+      const message =
+        tags.map(tagRuleMessage).find(Boolean) ??
+        (new Set(tags).size !== tags.length
+          ? 'Un même tag ne peut pas être saisi deux fois.'
+          : null)
+      if (message) context.addIssue({ code: 'custom', message })
     }),
 })
 
