@@ -224,6 +224,20 @@ describe('UploadDialog', () => {
     ])
   })
 
+  it('reports an expired session where no guard leaves the page', async () => {
+    reply = { status: 401, data: {} }
+    useAuthStore.setState({ token: fakeToken(3600) })
+    render(<UploadDialog open onClose={() => {}} />)
+    await pickFile()
+
+    await submit()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Votre session a expiré, reconnectez-vous.',
+    )
+    expect(useAuthStore.getState().sessionExpired).toBe(true)
+  })
+
   it('starts over with an empty form once closed', async () => {
     await openUploadDialog()
     await pickFile()

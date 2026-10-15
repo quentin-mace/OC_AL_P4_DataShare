@@ -44,6 +44,9 @@ function messageFor(violation: Violation, field: FormField): string {
 }
 
 function messageForStatus(status: number | null): string {
+  // Dans l'espace personnel, la garde a déjà quitté la page. Sur l'accueil,
+  // le formulaire reste ouvert et un nouvel envoi partira en anonyme.
+  if (status === 401) return 'Votre session a expiré, reconnectez-vous.'
   if (status === 413) return 'Le fichier est trop volumineux.'
   return 'Envoi impossible pour le moment, réessayez plus tard.'
 }
@@ -94,7 +97,7 @@ export function UploadForm({ onUploaded, withTags = true }: UploadFormProps) {
         ?.map((violation) => ({ violation, field: fieldOf(violation.propertyPath) }))
         .filter((entry): entry is { violation: Violation; field: FormField } => !!entry.field)
       if (!violations?.length) {
-        // Un 401 ferme la session (intercepteur) : la garde renvoie vers la connexion.
+        // Un 401 ferme aussi la session (intercepteur) : voir messageForStatus.
         setFormError(messageForStatus(getStatus(error)))
         return
       }
