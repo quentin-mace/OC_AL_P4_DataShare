@@ -22,6 +22,11 @@ export interface EditTagsDialogProps {
   onClose: () => void
   /** Nouvel état des tags, renvoyé par l'API après chaque modification. */
   onTagsChanged: (id: number, tags: string[]) => void
+  /**
+   * Tags du compte, proposés à l'ajout. Ceux que le fichier porte déjà sont
+   * écartés par la modale, l'ordre fourni est conservé.
+   */
+  accountTags?: string[]
 }
 
 /** Issue d'une requête, du point de vue du formulaire qui l'a lancée. */
@@ -41,8 +46,14 @@ function messageForStatus(status: number | null): string {
  * Ajout, renommage et retrait des tags d'un fichier (US08). Chaque action part
  * aussitôt vers l'API : il n'y a rien à enregistrer en fermant.
  */
-export function EditTagsDialog({ file, onClose, onTagsChanged }: EditTagsDialogProps) {
+export function EditTagsDialog({
+  file,
+  onClose,
+  onTagsChanged,
+  accountTags = [],
+}: EditTagsDialogProps) {
   const fileNameId = useId()
+  const suggestionsId = useId()
   const addInputRef = useRef<HTMLInputElement>(null)
   // Boutons des lignes, par action et par tag ("rename:facture").
   const buttons = useRef(new Map<string, HTMLButtonElement>())
@@ -125,6 +136,15 @@ export function EditTagsDialog({ file, onClose, onTagsChanged }: EditTagsDialogP
     }
   }
 
+  async function addExisting(target: FileHistoryItem, tag: string) {
+    await run(target, () => addTag(target.id, tag))
+    // En cas de succès, la pastille a quitté les suggestions avec le tag ; en
+    // cas d'échec, elle était désactivée. Le champ d'ajout reprend le focus.
+    addInputRef.current?.focus()
+  }
+
+  const suggestions = file ? accountTags.filter((tag) => !file.tags.includes(tag)) : []
+
   return (
     <Modal
       open={file !== null}
@@ -206,6 +226,25 @@ export function EditTagsDialog({ file, onClose, onTagsChanged }: EditTagsDialogP
             }
             onSubmit={(tag) => run(file, () => addTag(file.id, tag))}
           />
+          {suggestions.length > 0 && (
+            <div>
+              <p id={suggestionsId} className="mb-1 text-sm">
+                Tags déjà utilisés
+              </p>
+              <ul aria-labelledby={suggestionsId} className="flex flex-wrap gap-1">
+                {suggestions.map((tag) => (
+                  <li key={tag} className="max-w-full">
+                    <Tag
+                      name={tag}
+                      clickLabel={`Ajouter le tag ${tag}`}
+                      disabled={pending}
+                      onClick={() => void addExisting(file, tag)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {error && <Callout variant="error">{error}</Callout>}
         </div>
       )}
@@ -249,7 +288,11 @@ function TagForm({
     formState: { errors },
   } = useForm<TagFormInput, unknown, TagFormValues>({
     resolver: zodResolver(tagSchema(taken)),
-    mode: 'onTouched',
+    // À la soumission et non au départ du champ : le champ d'ajout a le focus
+    // dès l'ouverture, le quitter vide pour cliquer ailleurs n'est pas une
+    // erreur. Le message qui apparaîtrait décalerait en plus la modale sous le
+    // pointeur, et le clic visé (une suggestion, "Retirer") tomberait à côté.
+    mode: 'onSubmit',
     defaultValues: { tag: defaultValue },
   })
   const { ref, ...field } = register('tag')

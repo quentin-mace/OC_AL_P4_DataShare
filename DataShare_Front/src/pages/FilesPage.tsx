@@ -52,6 +52,11 @@ export function FilesPage() {
   const matching = files.filter((file) => matchesFilters(file, filter, tagFilter))
   const visible = matching.slice(0, visibleCount)
   const editing = files.find(({ id }) => id === editingId) ?? null
+  // Un tag n'existe que tant qu'un fichier le porte, et l'historique est chargé
+  // en entier : l'union des tags des fichiers est celle du compte.
+  const accountTags = [...new Set(files.flatMap(({ tags }) => tags))].sort((a, b) =>
+    a.localeCompare(b, 'fr'),
+  )
 
   // Un tag qui ne porte plus aucun fichier n'existe plus côté serveur : son
   // filtre n'aurait plus rien à montrer, il est retiré. Ajusté pendant le
@@ -170,7 +175,12 @@ export function FilesPage() {
         onClose={() => setToDelete(null)}
         onDeleted={handleDeleted}
       />
-      <EditTagsDialog file={editing} onClose={closeTags} onTagsChanged={handleTagsChanged} />
+      <EditTagsDialog
+        file={editing}
+        accountTags={accountTags}
+        onClose={closeTags}
+        onTagsChanged={handleTagsChanged}
+      />
     </div>
   )
 }

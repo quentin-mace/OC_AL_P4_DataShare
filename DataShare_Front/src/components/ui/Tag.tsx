@@ -7,6 +7,8 @@ export interface TagProps {
   onClick?: () => void
   /** Nom accessible du bouton, qui doit contenir le nom du tag. */
   clickLabel?: string
+  /** Désactive la pastille cliquable, par exemple pendant une requête. */
+  disabled?: boolean
   /** Ajoute une croix pour retirer le tag, ou le filtre qu'il représente. */
   onRemove?: () => void
   removeLabel?: string
@@ -16,14 +18,14 @@ const pillStyles =
   'inline-flex h-5 max-w-full items-center gap-0.5 rounded-full border border-accent-border bg-accent-soft text-xs text-accent-strong'
 
 const focusStyles =
-  'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+  'enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 /**
  * Pastille d'un tag (US08) : simple texte, bouton si onClick est fourni, et
  * croix de retrait si onRemove l'est. Un nom trop long est tronqué, et reste
  * lisible en entier au survol.
  */
-export function Tag({ name, onClick, clickLabel, onRemove, removeLabel }: TagProps) {
+export function Tag({ name, onClick, clickLabel, disabled, onRemove, removeLabel }: TagProps) {
   const label = (
     <span className="truncate" title={name}>
       {name}
@@ -36,8 +38,9 @@ export function Tag({ name, onClick, clickLabel, onRemove, removeLabel }: TagPro
         <button
           type="button"
           aria-label={clickLabel}
+          disabled={disabled}
           onClick={onClick}
-          className={joinClassNames('min-w-0 rounded-full hover:underline', focusStyles)}
+          className={joinClassNames('min-w-0 rounded-full enabled:hover:underline', focusStyles)}
         >
           {label}
         </button>

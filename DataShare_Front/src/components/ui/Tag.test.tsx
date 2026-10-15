@@ -20,6 +20,12 @@ describe('Tag', () => {
     expect(onClick).toHaveBeenCalledOnce()
   })
 
+  it('can be disabled', () => {
+    render(<Tag name="facture" onClick={() => {}} clickLabel="Ajouter le tag facture" disabled />)
+
+    expect(screen.getByRole('button', { name: 'Ajouter le tag facture' })).toBeDisabled()
+  })
+
   it('offers to remove it', async () => {
     const onRemove = vi.fn<() => void>()
     render(<Tag name="facture" onRemove={onRemove} removeLabel="Retirer le filtre facture" />)

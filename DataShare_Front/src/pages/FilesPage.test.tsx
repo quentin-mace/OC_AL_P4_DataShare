@@ -471,5 +471,25 @@ describe('FilesPage', () => {
       await waitFor(() => expect(rowNames()).toEqual(['facture-1.pdf', 'compo2.mp3']))
       expect(screen.queryByText('Filtré sur le tag')).not.toBeInTheDocument()
     })
+
+    it('suggests the tags of the whole account, sorted', async () => {
+      listReply = {
+        status: 200,
+        data: [
+          tagged,
+          file({ name: 'compo2.mp3', tags: ['musique', 'Été'] }),
+          { ...expiredFile('devis.pdf'), tags: ['devis', 'facture'] },
+        ],
+      }
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+
+      await openTags('facture-1.pdf')
+
+      const suggested = within(
+        screen.getByRole('list', { name: 'Tags déjà utilisés' }),
+      ).getAllByRole('listitem')
+      expect(suggested.map((item) => item.textContent)).toEqual(['devis', 'Été', 'musique'])
+    })
   })
 })

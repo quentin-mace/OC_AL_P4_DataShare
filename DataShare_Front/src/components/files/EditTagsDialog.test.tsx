@@ -57,7 +57,7 @@ const file: FileHistoryItem = {
 }
 
 // La page tient les tags à jour d'après onTagsChanged : le test fait de même.
-function renderDialog(initial: FileHistoryItem = file) {
+function renderDialog(initial: FileHistoryItem = file, accountTags: string[] = []) {
   const onClose = vi.fn<() => void>()
   const onTagsChanged = vi.fn<(id: number, tags: string[]) => void>()
 
@@ -66,6 +66,7 @@ function renderDialog(initial: FileHistoryItem = file) {
     return (
       <EditTagsDialog
         file={current}
+        accountTags={accountTags}
         onClose={onClose}
         onTagsChanged={(id, tags) => {
           onTagsChanged(id, tags)
@@ -165,6 +166,24 @@ describe('EditTagsDialog', () => {
       expect(sent).not.toHaveBeenCalled()
     })
 
+    it('does not complain about the empty field when the user goes elsewhere', async () => {
+      renderDialog(file, ['devis'])
+
+      await userEvent.click(screen.getByRole('button', { name: 'Renommer le tag facture' }))
+
+      expect(screen.queryByText('Saisissez un tag.')).not.toBeInTheDocument()
+    })
+
+    it('checks again on each keystroke once an error is shown', async () => {
+      renderDialog()
+      await addTag('facture')
+      expect(addInput()).toHaveAccessibleDescription('Ce fichier porte déjà ce tag.')
+
+      await userEvent.type(addInput(), '-2026')
+
+      expect(addInput()).not.toHaveAccessibleDescription()
+    })
+
     it('shows a refusal of the server on the field', async () => {
       reply = () => ({
         status: 422,
@@ -204,6 +223,63 @@ describe('EditTagsDialog', () => {
       )
       expect(screen.getByRole('dialog')).toBeInTheDocument()
       expect(addInput()).toHaveFocus()
+    })
+  })
+
+  describe('suggesting the tags of the account', () => {
+    const suggestions = () =>
+      within(screen.getByRole('list', { name: 'Tags déjà utilisés' }))
+        .getAllByRole('listitem')
+        .map((item) => item.textContent)
+
+    it('lists the tags the file does not have yet, in the given order', () => {
+      renderDialog(file, ['client-x', 'devis', 'facture', 'urgent'])
+
+      expect(suggestions()).toEqual(['devis', 'urgent'])
+    })
+
+    it('shows no suggestion when the file has every tag of the account', () => {
+      renderDialog(file, ['client-x', 'facture'])
+
+      expect(screen.queryByText('Tags déjà utilisés')).not.toBeInTheDocument()
+    })
+
+    it('adds a suggested tag in one click', async () => {
+      const { onTagsChanged } = renderDialog(file, ['devis', 'urgent'])
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ajouter le tag devis' }))
+
+      const [config] = sent.mock.calls[0]
+      expect(config.method).toBe('post')
+      expect(JSON.parse(config.data as string)).toEqual({ tag: 'devis' })
+      expect(onTagsChanged).toHaveBeenCalledExactlyOnceWith(7, ['facture', 'client-x', 'devis'])
+      expect(suggestions()).toEqual(['urgent'])
+      expect(addInput()).toHaveFocus()
+    })
+
+    it('reports a failure and keeps the suggestion', async () => {
+      reply = () => ({ status: 500 })
+      renderDialog(file, ['devis'])
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ajouter le tag devis' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Modification impossible pour le moment, réessayez plus tard.',
+      )
+      expect(suggestions()).toEqual(['devis'])
+      expect(addInput()).toHaveFocus()
+    })
+
+    it('disables the suggestions while a change is under way', async () => {
+      apiClient.defaults.adapter = (config) =>
+        new Promise(() => {
+          sent(config)
+        })
+      renderDialog(file, ['devis'])
+
+      await userEvent.click(screen.getByRole('button', { name: 'Retirer le tag facture' }))
+
+      expect(screen.getByRole('button', { name: 'Ajouter le tag devis' })).toBeDisabled()
     })
   })
 

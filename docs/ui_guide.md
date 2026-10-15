@@ -176,6 +176,7 @@ Composant contrôlé : l'état vit dans la page. Le `label` n'est pas affiché m
 Pastille d'un tag (US08), en `accent-soft` bordé d'`accent-border`, comme le bouton `tinted`. Aucune maquette ne dessine de tags : la pastille reprend les tokens existants sans en créer.
 
 - Sans `onClick`, simple texte. Avec, un `<button>` dont `clickLabel` donne le nom accessible : il doit contenir le nom du tag, que l'utilisateur voit et peut dicter.
+- `disabled` désactive la pastille cliquable, par exemple pendant une requête.
 - `onRemove` ajoute une croix, bouton distinct nommé par `removeLabel` (par défaut "Retirer facture").
 - Un nom long est tronqué à la largeur disponible, et reste lisible en entier au survol (`title`).
 
@@ -275,13 +276,20 @@ Confirmation de suppression (US06, `src/components/files/`), construite sur `Mod
 const [editingId, setEditingId] = useState<number | null>(null)
 const editing = files.find(({ id }) => id === editingId) ?? null
 
-<EditTagsDialog file={editing} onClose={closeTags} onTagsChanged={handleTagsChanged} />
+<EditTagsDialog
+  file={editing}
+  accountTags={accountTags}
+  onClose={closeTags}
+  onTagsChanged={handleTagsChanged}
+/>
 ```
 
 Édition des tags d'un fichier (US08, `src/components/files/`), ouverte par le bouton "Tags" d'une ligne de l'historique, active ou expirée. Elle liste les tags du fichier, chacun avec "Renommer" et "Retirer", et propose un champ "Ajouter un tag".
 
+- **Tags déjà utilisés.** Sous le champ d'ajout, les tags du compte que le fichier ne porte pas encore, en pastilles : un clic ajoute le tag, sans saisie. `accountTags` est l'union des tags de l'historique, triée (`localeCompare` en `fr`). Elle est exacte sans appel dédié, puisque l'historique est chargé en entier et qu'un tag n'existe que tant qu'un fichier le porte (voir `architectureDecisions/tags.md`). Après le clic, le focus va au champ d'ajout : la pastille a disparu (succès) ou était désactivée (échec).
+
 - **Chaque action part aussitôt** (`addTag`, `renameTag`, `removeTag` de `src/api/files.ts`), il n'y a rien à enregistrer en fermant. La liste affichée est celle que renvoie l'API (`{ id, tags }`), remontée par `onTagsChanged` : la page met à jour la ligne sans recharger l'historique. La modale reçoit donc le fichier tiré de la liste de la page, par identifiant, et non une copie figée à l'ouverture.
-- **Validation** par `tagSchema` (`src/validation/tagSchema.ts`) : tag non vide, 30 caractères au plus, sans virgule (le séparateur de l'envoi), sans "/" et absent du fichier. Le "/" est une restriction propre au front, appliquée aussi à l'envoi : le back l'accepte, mais un tag qui en contient un n'est plus adressable par `/files/{id}/tags/{tag}`, donc ni renommable ni retirable (voir `architectureDecisions/tags.md`). Un 422 s'affiche sur le champ, un 404 (fichier ou tag disparu depuis un autre onglet) et toute autre erreur dans un `Callout`.
+- **Validation** par `tagSchema` (`src/validation/tagSchema.ts`) : tag non vide, 30 caractères au plus, sans virgule (le séparateur de l'envoi), sans "/" et absent du fichier. Le "/" est une restriction propre au front, appliquée aussi à l'envoi : le back l'accepte, mais un tag qui en contient un n'est plus adressable par `/files/{id}/tags/{tag}`, donc ni renommable ni retirable (voir `architectureDecisions/tags.md`). Un 422 s'affiche sur le champ, un 404 (fichier ou tag disparu depuis un autre onglet) et toute autre erreur dans un `Callout`. Contrairement à la règle des formulaires (`onTouched`), la validation se fait à la soumission (`mode: 'onSubmit'`), puis à chaque frappe une fois l'erreur affichée : le champ d'ajout a le focus dès l'ouverture, et le quitter vide pour cliquer ailleurs n'est pas une erreur. Le message qui apparaîtrait décalerait aussi la modale sous le pointeur, si bien que le clic visé (une suggestion, "Retirer") tomberait à côté.
 - **Renommage en ligne.** Le champ s'ouvre sur le nom actuel, sélectionné. Entrée valide, Échap ou "Annuler" rendent la ligne sans fermer la modale. Un nom inchangé n'appelle pas l'API. Le renommage ne vaut que pour ce fichier, comme la route.
 - **Focus.** À l'ouverture, sur le champ d'ajout, qui le garde après un ajout pour enchaîner les tags. Après un renommage, sur le bouton "Renommer" du tag renommé ; après un retrait, sur le champ d'ajout, la ligne ayant disparu. Pendant la requête, les champs passent en `readOnly` plutôt qu'en `disabled`, qui leur ferait perdre le focus.
 - Pendant la requête, les boutons sont désactivés et la modale ne se ferme pas (Échap compris).
