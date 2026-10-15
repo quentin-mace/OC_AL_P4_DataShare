@@ -233,6 +233,18 @@ Barre d'avancement de 0 à 100 sur `<progress>` natif, avec le pourcentage affic
 
 Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la carte de fin d'upload comme sur la page de téléchargement. Un nom trop long est tronqué, et reste lisible en entier au survol (`title`).
 
+### UploadDialog
+
+```tsx
+<UploadDialog open={open} onClose={() => setOpen(false)} withTags={isAuthenticated} />
+```
+
+Modale d'envoi (`src/components/upload/`), ouverte par "Ajouter des fichiers" dans l'espace personnel et par le bouton rond de l'accueil. Elle enchaîne le formulaire puis le lien de partage.
+
+- `withTags` (vrai par défaut) affiche le champ Tags. L'accueil le passe à faux pour un visiteur : l'API refuse les tags d'un envoi anonyme (voir `anonymous_upload.md`). Un utilisateur connecté garde ses tags, son envoi est rattaché à son compte.
+- Un 401 affiche "Votre session a expiré, reconnectez-vous." Sur l'accueil, aucune garde ne quitte la page : le champ Tags disparaît et l'envoi suivant part en anonyme.
+- Écart connu : la maquette mobile de l'accueil dessine une feuille ancrée en bas d'écran, la modale reste centrée comme dans l'espace personnel.
+
 ### FileRow
 
 ```tsx

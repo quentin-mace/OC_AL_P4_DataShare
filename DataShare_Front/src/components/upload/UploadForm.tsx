@@ -44,15 +44,23 @@ function messageFor(violation: Violation, field: FormField): string {
 }
 
 function messageForStatus(status: number | null): string {
+  // Dans l'espace personnel, la garde a déjà quitté la page. Sur l'accueil,
+  // le formulaire reste ouvert et un nouvel envoi partira en anonyme.
+  if (status === 401) return 'Votre session a expiré, reconnectez-vous.'
   if (status === 413) return 'Le fichier est trop volumineux.'
   return 'Envoi impossible pour le moment, réessayez plus tard.'
 }
 
 export interface UploadFormProps {
   onUploaded: (file: UploadedFile, values: UploadFormValues) => void
+  /**
+   * Affiche le champ Tags (défaut). Un envoi anonyme s'en passe : l'API refuse
+   * les tags sans compte. Masqué, le champ vaut "" et aucun tag n'est envoyé.
+   */
+  withTags?: boolean
 }
 
-export function UploadForm({ onUploaded }: UploadFormProps) {
+export function UploadForm({ onUploaded, withTags = true }: UploadFormProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
   const abortRef = useRef<AbortController>(null)
@@ -89,7 +97,7 @@ export function UploadForm({ onUploaded }: UploadFormProps) {
         ?.map((violation) => ({ violation, field: fieldOf(violation.propertyPath) }))
         .filter((entry): entry is { violation: Violation; field: FormField } => !!entry.field)
       if (!violations?.length) {
-        // Un 401 ferme la session (intercepteur) : la garde renvoie vers la connexion.
+        // Un 401 ferme aussi la session (intercepteur) : voir messageForStatus.
         setFormError(messageForStatus(getStatus(error)))
         return
       }
@@ -140,14 +148,16 @@ export function UploadForm({ onUploaded }: UploadFormProps) {
         error={errors.expiresInDays?.message}
         {...register('expiresInDays')}
       />
-      <Input
-        label="Tags"
-        autoComplete="off"
-        placeholder="Optionnel, séparés par des virgules"
-        disabled={isSubmitting}
-        error={errors.tags?.message}
-        {...register('tags')}
-      />
+      {withTags && (
+        <Input
+          label="Tags"
+          autoComplete="off"
+          placeholder="Optionnel, séparés par des virgules"
+          disabled={isSubmitting}
+          error={errors.tags?.message}
+          {...register('tags')}
+        />
+      )}
       {isSubmitting && <ProgressBar label="Envoi en cours" value={progress} />}
       {formError && <Callout variant="error">{formError}</Callout>}
       <Button

@@ -10,6 +10,8 @@ export interface UploadDialogProps {
   onClose: () => void
   /** Un fichier vient d'être envoyé, avant même la fermeture de la modale. */
   onUploaded?: () => void
+  /** Voir UploadForm : faux pour un envoi anonyme. */
+  withTags?: boolean
 }
 
 interface Upload {
@@ -17,8 +19,8 @@ interface Upload {
   expiresInDays: UploadFormValues['expiresInDays']
 }
 
-/** Formulaire d'envoi puis lien de partage, dans une même modale (US01). */
-export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
+/** Formulaire d'envoi puis lien de partage, dans une même modale (US01, US07). */
+export function UploadDialog({ open, onClose, onUploaded, withTags }: UploadDialogProps) {
   const [upload, setUpload] = useState<Upload | null>(null)
 
   // Rouvrir la modale repart d'un formulaire vierge.
@@ -33,6 +35,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
         <UploadSuccess file={upload.file} expiresInDays={upload.expiresInDays} />
       ) : (
         <UploadForm
+          withTags={withTags}
           onUploaded={(file, { expiresInDays }) => {
             setUpload({ file, expiresInDays })
             onUploaded?.()
