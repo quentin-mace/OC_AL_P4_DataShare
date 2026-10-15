@@ -31,15 +31,18 @@ const uploaded: UploadedFile = {
 }
 
 // Remplace le réseau : GET /files renvoie listReply, POST /files et DELETE
-// /files/{id} réussissent toujours.
+// /files/{id} réussissent toujours. Les routes de tags répondent tagsReply.
 const replies: Record<string, Reply> = {
   post: { status: 201, data: uploaded },
   delete: { status: 204 },
 }
+let tagsReply: Reply
 
 const adapter: AxiosAdapter = async (config) => {
   sent(config)
-  const reply = replies[config.method ?? ''] ?? listReply
+  const reply = config.url?.includes('/tags')
+    ? tagsReply
+    : (replies[config.method ?? ''] ?? listReply)
   const response = { data: [], headers: {}, ...reply, statusText: '', config }
   if (reply.status >= 400) {
     throw new AxiosError('Request failed', undefined, config, null, response)
@@ -390,6 +393,83 @@ describe('FilesPage', () => {
 
       await waitFor(() => expect(rowNames()).toEqual(['facture-2.pdf']))
       expect(screen.getByText('Filtré sur le tag')).toBeInTheDocument()
+    })
+  })
+
+  describe('tag edition', () => {
+    let tagged: FileHistoryItem
+
+    beforeEach(() => {
+      tagged = file({ name: 'facture-1.pdf', tags: ['facture'] })
+      listReply = {
+        status: 200,
+        data: [
+          tagged,
+          file({ name: 'facture-2.pdf', tags: ['facture'] }),
+          file({ name: 'compo2.mp3' }),
+        ],
+      }
+    })
+
+    const openTags = (name: string) =>
+      userEvent.click(
+        within(screen.getByText(name).closest('li')!).getByRole('button', { name: 'Tags' }),
+      )
+    const dialog = () => screen.getByRole('dialog', { name: 'Tags du fichier' })
+
+    it('updates the row without reloading the list', async () => {
+      tagsReply = { status: 201, data: { id: tagged.id, tags: ['facture', 'urgent'] } }
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+
+      await openTags('facture-1.pdf')
+      expect(dialog()).toHaveAccessibleDescription('facture-1.pdf')
+      await userEvent.type(within(dialog()).getByLabelText('Ajouter un tag'), 'urgent{Enter}')
+
+      await waitFor(() =>
+        expect(within(rows()[0]).getByRole('list', { name: 'Tags' })).toHaveTextContent(
+          'factureurgent',
+        ),
+      )
+      expect(within(dialog()).getByRole('list', { name: 'Tags' })).toHaveTextContent(
+        /^facture.*urgent/,
+      )
+      expect(listCalls()).toBe(1)
+    })
+
+    it('keeps the filter on a tag that other files still have', async () => {
+      tagsReply = { status: 200, data: { id: tagged.id, tags: [] } }
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+      await userEvent.click(
+        within(rows()[0]).getByRole('button', { name: 'Filtrer sur le tag facture' }),
+      )
+
+      await openTags('facture-1.pdf')
+      await userEvent.click(screen.getByRole('button', { name: 'Retirer le tag facture' }))
+      await waitFor(() => expect(rowNames()).toEqual(['facture-2.pdf']))
+      await userEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+
+      expect(screen.getByText('Filtré sur le tag')).toBeInTheDocument()
+      // La ligne éditée ne passe plus le filtre : le focus va au titre.
+      expect(screen.getByRole('heading', { name: 'Mes fichiers' })).toHaveFocus()
+    })
+
+    it('drops the filter on a tag that no file has any more', async () => {
+      listReply = { status: 200, data: [tagged, file({ name: 'compo2.mp3' })] }
+      tagsReply = { status: 200, data: { id: tagged.id, tags: ['facturé'] } }
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+      await userEvent.click(
+        within(rows()[0]).getByRole('button', { name: 'Filtrer sur le tag facture' }),
+      )
+
+      await openTags('facture-1.pdf')
+      await userEvent.click(screen.getByRole('button', { name: 'Renommer le tag facture' }))
+      await userEvent.type(screen.getByLabelText('Nouveau nom du tag facture'), 'é{Enter}')
+
+      await waitFor(() => expect(rowNames()).toEqual(['facture-1.pdf', 'compo2.mp3']))
+      expect(screen.queryByText('Filtré sur le tag')).not.toBeInTheDocument()
     })
   })
 })

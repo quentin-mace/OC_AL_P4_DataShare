@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router'
 import { listFiles, type FileHistoryItem } from '../api/files'
 import { DeleteFileDialog } from '../components/files/DeleteFileDialog'
+import { EditTagsDialog } from '../components/files/EditTagsDialog'
 import { FileRow } from '../components/files/FileRow'
 import type { DashboardContext } from '../components/layout/DashboardLayout'
 import { Button } from '../components/ui/Button'
@@ -23,6 +24,13 @@ const PAGE_SIZE = 10
 type PageState =
   { kind: 'loading' } | { kind: 'loadError' } | { kind: 'ready'; files: FileHistoryItem[] }
 
+function matchesFilters(file: FileHistoryItem, filter: Filter, tagFilter: string | null) {
+  return (
+    (filter === 'all' || file.status === filter) &&
+    (tagFilter === null || file.tags.includes(tagFilter))
+  )
+}
+
 export function FilesPage() {
   const { filesVersion } = useOutletContext<DashboardContext>()
   // Après un envoi, la liste affichée reste en place jusqu'à l'arrivée de la
@@ -34,16 +42,33 @@ export function FilesPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [toDelete, setToDelete] = useState<FileHistoryItem | null>(null)
   const [deleted, setDeleted] = useState<FileHistoryItem | null>(null)
+  // Par identifiant : la modale suit les tags du fichier à chaque modification.
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [headingFocus, setHeadingFocus] = useState(0)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const headingId = useId()
 
-  // Le bouton Supprimer a disparu avec sa ligne : le focus, que la modale lui
+  const files = state.kind === 'ready' ? state.files : []
+  const matching = files.filter((file) => matchesFilters(file, filter, tagFilter))
+  const visible = matching.slice(0, visibleCount)
+  const editing = files.find(({ id }) => id === editingId) ?? null
+
+  // Un tag qui ne porte plus aucun fichier n'existe plus côté serveur : son
+  // filtre n'aurait plus rien à montrer, il est retiré. Ajusté pendant le
+  // rendu plutôt que dans un effet, qui afficherait d'abord une liste vide.
+  if (tagFilter && state.kind === 'ready' && !files.some(({ tags }) => tags.includes(tagFilter))) {
+    setTagFilter(null)
+    setVisibleCount(PAGE_SIZE)
+  }
+
+  // Le bouton qui avait ouvert la modale a disparu avec sa ligne (fichier
+  // supprimé, ou qui ne passe plus les filtres) : le focus, que la modale lui
   // rendrait, irait se perdre sur <body>. Il va au titre, d'où la liste se
   // reparcourt. L'effet suit le démontage de la modale, donc le close() qui
   // aurait tenté de rendre le focus.
   useEffect(() => {
-    if (deleted) headingRef.current?.focus()
-  }, [deleted])
+    if (headingFocus > 0) headingRef.current?.focus()
+  }, [headingFocus])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -68,21 +93,26 @@ export function FilesPage() {
   }
 
   // Mise à jour locale, sans recharger : la liste est déjà entière côté client.
-  // Un tag qui ne porte plus aucun fichier n'existe plus côté serveur : son
-  // filtre n'aurait plus rien à montrer, il est retiré.
-  function replaceFiles(update: (files: FileHistoryItem[]) => FileHistoryItem[]) {
-    if (state.kind !== 'ready') return
-    const files = update(state.files)
-    setState({ kind: 'ready', files })
-    if (tagFilter && !files.some(({ tags }) => tags.includes(tagFilter))) {
-      changeTagFilter(null)
-    }
+  function updateFiles(update: (files: FileHistoryItem[]) => FileHistoryItem[]) {
+    setState((current) =>
+      current.kind === 'ready' ? { kind: 'ready', files: update(current.files) } : current,
+    )
   }
 
   function handleDeleted(file: FileHistoryItem) {
-    replaceFiles((files) => files.filter(({ id }) => id !== file.id))
+    updateFiles((current) => current.filter(({ id }) => id !== file.id))
     setToDelete(null)
     setDeleted(file)
+    setHeadingFocus((count) => count + 1)
+  }
+
+  function handleTagsChanged(id: number, tags: string[]) {
+    updateFiles((current) => current.map((file) => (file.id === id ? { ...file, tags } : file)))
+  }
+
+  function closeTags() {
+    if (editing && !visible.includes(editing)) setHeadingFocus((count) => count + 1)
+    setEditingId(null)
   }
 
   return (
@@ -119,13 +149,19 @@ export function FilesPage() {
       )}
       {state.kind === 'ready' && (
         <FileList
-          files={state.files}
+          files={visible}
+          hasMore={matching.length > visible.length}
+          emptyMessage={
+            // Le tag filtré porte toujours au moins un fichier : seul le cumul
+            // des deux filtres peut vider la liste.
+            tagFilter
+              ? 'Aucun fichier ne correspond à ces filtres.'
+              : filters.find(({ value }) => value === filter)!.empty
+          }
           labelledBy={headingId}
-          filter={filter}
-          tagFilter={tagFilter}
-          visibleCount={visibleCount}
           onShowMore={() => setVisibleCount((count) => count + PAGE_SIZE)}
           onDelete={setToDelete}
+          onEditTags={(file) => setEditingId(file.id)}
           onTagSelect={changeTagFilter}
         />
       )}
@@ -134,55 +170,52 @@ export function FilesPage() {
         onClose={() => setToDelete(null)}
         onDeleted={handleDeleted}
       />
+      <EditTagsDialog file={editing} onClose={closeTags} onTagsChanged={handleTagsChanged} />
     </div>
   )
 }
 
 interface FileListProps {
+  /** Fichiers à afficher, déjà filtrés et paginés par la page. */
   files: FileHistoryItem[]
+  hasMore: boolean
+  emptyMessage: string
   /** Titre de la page, qui nomme la liste : chaque ligne contient sa liste de tags. */
   labelledBy: string
-  filter: Filter
-  tagFilter: string | null
-  visibleCount: number
   onShowMore: () => void
   onDelete: (file: FileHistoryItem) => void
+  onEditTags: (file: FileHistoryItem) => void
   onTagSelect: (tag: string) => void
 }
 
 function FileList({
   files,
+  hasMore,
+  emptyMessage,
   labelledBy,
-  filter,
-  tagFilter,
-  visibleCount,
   onShowMore,
   onDelete,
+  onEditTags,
   onTagSelect,
 }: FileListProps) {
-  const matching = files.filter(
-    (file) =>
-      (filter === 'all' || file.status === filter) &&
-      (tagFilter === null || file.tags.includes(tagFilter)),
-  )
-
-  if (matching.length === 0) {
-    // Le tag filtré porte toujours au moins un fichier : seul le cumul des
-    // deux filtres peut vider la liste.
-    const { empty } = filters.find(({ value }) => value === filter)!
-    return (
-      <p className="text-sm">{tagFilter ? 'Aucun fichier ne correspond à ces filtres.' : empty}</p>
-    )
+  if (files.length === 0) {
+    return <p className="text-sm">{emptyMessage}</p>
   }
 
   return (
     <>
       <ul aria-labelledby={labelledBy} className="flex flex-col gap-3">
-        {matching.slice(0, visibleCount).map((file) => (
-          <FileRow key={file.id} file={file} onDelete={onDelete} onTagSelect={onTagSelect} />
+        {files.map((file) => (
+          <FileRow
+            key={file.id}
+            file={file}
+            onDelete={onDelete}
+            onEditTags={onEditTags}
+            onTagSelect={onTagSelect}
+          />
         ))}
       </ul>
-      {matching.length > visibleCount && (
+      {hasMore && (
         <Button className="self-center" onClick={onShowMore}>
           Afficher plus
         </Button>

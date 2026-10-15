@@ -26,13 +26,19 @@ function renderRow(
   item: FileHistoryItem,
   {
     onDelete = vi.fn<(file: FileHistoryItem) => void>(),
+    onEditTags = vi.fn<(file: FileHistoryItem) => void>(),
     onTagSelect = vi.fn<(tag: string) => void>(),
   } = {},
 ) {
   render(
     <MemoryRouter>
       <ul>
-        <FileRow file={item} onDelete={onDelete} onTagSelect={onTagSelect} />
+        <FileRow
+          file={item}
+          onDelete={onDelete}
+          onEditTags={onEditTags}
+          onTagSelect={onTagSelect}
+        />
       </ul>
     </MemoryRouter>,
   )
@@ -126,5 +132,15 @@ describe('FileRow', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Filtrer sur le tag client-x' }))
 
     expect(onTagSelect).toHaveBeenCalledExactlyOnceWith('client-x')
+  })
+
+  it('asks to edit the tags, of an expired file too', async () => {
+    const onEditTags = vi.fn<(file: FileHistoryItem) => void>()
+    const item = file({ status: 'expired', expiresAt: new Date(2026, 9, 10).toISOString() })
+    renderRow(item, { onEditTags })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tags' }))
+
+    expect(onEditTags).toHaveBeenCalledExactlyOnceWith(item)
   })
 })
