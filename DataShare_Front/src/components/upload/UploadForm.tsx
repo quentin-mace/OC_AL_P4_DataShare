@@ -50,9 +50,14 @@ function messageForStatus(status: number | null): string {
 
 export interface UploadFormProps {
   onUploaded: (file: UploadedFile, values: UploadFormValues) => void
+  /**
+   * Affiche le champ Tags (défaut). Un envoi anonyme s'en passe : l'API refuse
+   * les tags sans compte. Masqué, le champ vaut "" et aucun tag n'est envoyé.
+   */
+  withTags?: boolean
 }
 
-export function UploadForm({ onUploaded }: UploadFormProps) {
+export function UploadForm({ onUploaded, withTags = true }: UploadFormProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
   const abortRef = useRef<AbortController>(null)
@@ -140,14 +145,16 @@ export function UploadForm({ onUploaded }: UploadFormProps) {
         error={errors.expiresInDays?.message}
         {...register('expiresInDays')}
       />
-      <Input
-        label="Tags"
-        autoComplete="off"
-        placeholder="Optionnel, séparés par des virgules"
-        disabled={isSubmitting}
-        error={errors.tags?.message}
-        {...register('tags')}
-      />
+      {withTags && (
+        <Input
+          label="Tags"
+          autoComplete="off"
+          placeholder="Optionnel, séparés par des virgules"
+          disabled={isSubmitting}
+          error={errors.tags?.message}
+          {...register('tags')}
+        />
+      )}
       {isSubmitting && <ProgressBar label="Envoi en cours" value={progress} />}
       {formError && <Callout variant="error">{formError}</Callout>}
       <Button

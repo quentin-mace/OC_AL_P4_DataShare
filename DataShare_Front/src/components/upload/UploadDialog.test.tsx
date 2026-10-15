@@ -10,6 +10,7 @@ import { useAuthStore } from '../../auth/authStore'
 import { paths } from '../../routes/paths'
 import { routes } from '../../routes/routes'
 import { fakeToken } from '../../test/jwt'
+import { UploadDialog } from './UploadDialog'
 
 const report = new File(['contenu du rapport'], 'rapport.pdf', { type: 'application/pdf' })
 
@@ -208,6 +209,19 @@ describe('UploadDialog', () => {
     await screen.findByRole('heading', { name: 'Connexion' })
     expect(router.state.location.pathname).toBe(paths.login)
     expect(useAuthStore.getState().sessionExpired).toBe(true)
+  })
+
+  it('leaves out the tags field when asked to', async () => {
+    render(<UploadDialog open withTags={false} onClose={() => {}} />)
+    await pickFile()
+
+    await submit()
+
+    expect(screen.queryByLabelText('Tags')).not.toBeInTheDocument()
+    expect(sent).toHaveBeenCalledWith([
+      ['file', report],
+      ['expiresInDays', '7'],
+    ])
   })
 
   it('starts over with an empty form once closed', async () => {
