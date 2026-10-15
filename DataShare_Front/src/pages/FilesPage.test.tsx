@@ -75,10 +75,14 @@ function renderFilesPage() {
   render(<RouterProvider router={router} />)
 }
 
-const rowNames = () =>
-  within(screen.getByRole('list'))
+// Les lignes seules, sans les tags qu'elles listent.
+const rows = () => {
+  const list = screen.getByRole('list', { name: 'Mes fichiers' })
+  return within(list)
     .getAllByRole('listitem')
-    .map((row) => row.querySelector('[title]')?.getAttribute('title'))
+    .filter((row) => row.parentElement === list)
+}
+const rowNames = () => rows().map((row) => row.querySelector('[title]')?.getAttribute('title'))
 const listCalls = () => sent.mock.calls.filter(([config]) => config.method === 'get').length
 const chooseFilter = (name: string) => userEvent.click(screen.getByRole('radio', { name }))
 const deleteCalls = () => sent.mock.calls.filter(([config]) => config.method === 'delete')
@@ -272,5 +276,120 @@ describe('FilesPage', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(rowNames()).toEqual(['compo2.mp3', 'vacances.mp4'])
     expect(deleteCalls()).toHaveLength(0)
+  })
+
+  describe('tag filter', () => {
+    beforeEach(() => {
+      listReply = {
+        status: 200,
+        data: [
+          file({ name: 'facture-1.pdf', tags: ['facture', 'client-x'] }),
+          file({ name: 'compo2.mp3', tags: ['musique'] }),
+          { ...expiredFile('facture-2.pdf'), tags: ['facture'] },
+        ],
+      }
+    })
+
+    const selectTag = (row: string, tag: string) =>
+      userEvent.click(
+        within(screen.getByText(row).closest('li')!).getByRole('button', {
+          name: `Filtrer sur le tag ${tag}`,
+        }),
+      )
+
+    it('shows the tags of each file', async () => {
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+
+      expect(within(rows()[0]).getByRole('list', { name: 'Tags' })).toHaveTextContent(
+        'factureclient-x',
+      )
+    })
+
+    it('filters on a clicked tag without calling the API again', async () => {
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+
+      await selectTag('facture-1.pdf', 'facture')
+
+      expect(rowNames()).toEqual(['facture-1.pdf', 'facture-2.pdf'])
+      expect(screen.getByText('Filtré sur le tag')).toBeInTheDocument()
+      expect(listCalls()).toBe(1)
+    })
+
+    it('combines the tag with the status filter', async () => {
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+
+      await selectTag('facture-1.pdf', 'facture')
+      await chooseFilter('Expiré')
+
+      expect(rowNames()).toEqual(['facture-2.pdf'])
+    })
+
+    it('says when no file matches both filters', async () => {
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+
+      await selectTag('compo2.mp3', 'musique')
+      await chooseFilter('Expiré')
+
+      expect(screen.getByText('Aucun fichier ne correspond à ces filtres.')).toBeInTheDocument()
+    })
+
+    it('removes the tag filter', async () => {
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+      await selectTag('compo2.mp3', 'musique')
+      expect(rowNames()).toEqual(['compo2.mp3'])
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Retirer le filtre sur le tag musique' }),
+      )
+
+      expect(rowNames()).toEqual(['facture-1.pdf', 'compo2.mp3', 'facture-2.pdf'])
+      expect(screen.queryByText('Filtré sur le tag')).not.toBeInTheDocument()
+    })
+
+    it('starts again from ten files when the tag changes', async () => {
+      listReply = {
+        status: 200,
+        data: Array.from({ length: 25 }, (_, index) =>
+          file({ name: `facture-${index + 1}.pdf`, tags: ['facture'] }),
+        ),
+      }
+      renderFilesPage()
+      await screen.findByText('facture-1.pdf')
+      await userEvent.click(screen.getByRole('button', { name: 'Afficher plus' }))
+      expect(rowNames()).toHaveLength(20)
+
+      await selectTag('facture-1.pdf', 'facture')
+
+      expect(rowNames()).toHaveLength(10)
+    })
+
+    it('drops the filter once its last file is deleted', async () => {
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+      await selectTag('compo2.mp3', 'musique')
+
+      await askToDelete('compo2.mp3')
+      await confirmDeletion()
+
+      await waitFor(() => expect(rowNames()).toEqual(['facture-1.pdf', 'facture-2.pdf']))
+      expect(screen.queryByText('Filtré sur le tag')).not.toBeInTheDocument()
+    })
+
+    it('keeps the filter while another file still has the tag', async () => {
+      renderFilesPage()
+      await screen.findByText('compo2.mp3')
+      await selectTag('facture-1.pdf', 'facture')
+
+      await askToDelete('facture-1.pdf')
+      await confirmDeletion()
+
+      await waitFor(() => expect(rowNames()).toEqual(['facture-2.pdf']))
+      expect(screen.getByText('Filtré sur le tag')).toBeInTheDocument()
+    })
   })
 })

@@ -5,19 +5,22 @@ import { daysUntil, expirationLabel } from '../../format/expiration'
 import { paths } from '../../routes/paths'
 import { Button } from '../ui/Button'
 import { buttonStyles } from '../ui/buttonStyles'
+import { Tag } from '../ui/Tag'
 import { FileTypeIcon } from './FileTypeIcon'
 
 export interface FileRowProps {
   file: FileHistoryItem
   /** Demande la suppression du fichier ; la confirmation revient à la page. */
   onDelete: (file: FileHistoryItem) => void
+  /** Filtre l'historique sur un tag, choisi en cliquant sa pastille. */
+  onTagSelect: (tag: string) => void
 }
 
 /**
- * Une ligne de l'historique (US05) : type, nom, échéance, cadenas, suppression
- * (US06) et lien de partage.
+ * Une ligne de l'historique (US05) : type, nom, échéance, tags (US08),
+ * cadenas, suppression (US06) et lien de partage.
  */
-export function FileRow({ file, onDelete }: FileRowProps) {
+export function FileRow({ file, onDelete, onTagSelect }: FileRowProps) {
   // L'état vient de l'API, seule à faire foi ; l'échéance n'est qu'un libellé.
   const expired = file.status === 'expired'
 
@@ -32,6 +35,19 @@ export function FileRow({ file, onDelete }: FileRowProps) {
           <p className="text-xs text-danger">Expiré</p>
         ) : (
           <p className="text-xs">{expirationLabel(daysUntil(file.expiresAt))}</p>
+        )}
+        {file.tags.length > 0 && (
+          <ul aria-label="Tags" className="mt-1 flex flex-wrap gap-1">
+            {file.tags.map((tag) => (
+              <li key={tag} className="max-w-full">
+                <Tag
+                  name={tag}
+                  onClick={() => onTagSelect(tag)}
+                  clickLabel={`Filtrer sur le tag ${tag}`}
+                />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
       {file.hasPassword && (

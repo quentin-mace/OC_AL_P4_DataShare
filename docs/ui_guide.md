@@ -165,6 +165,20 @@ const [filter, setFilter] = useState<'all' | 'active' | 'expired'>('all')
 
 Composant contrôlé : l'état vit dans la page. Le `label` n'est pas affiché mais annoncé, il doit dire ce que l'on filtre. Construit sur des boutons radio natifs, il se pilote aux flèches du clavier.
 
+### Tag
+
+```tsx
+<Tag name="facture" />
+<Tag name="facture" onClick={() => setTagFilter('facture')} clickLabel="Filtrer sur le tag facture" />
+<Tag name="facture" onRemove={clearFilter} removeLabel="Retirer le filtre sur le tag facture" />
+```
+
+Pastille d'un tag (US08), en `accent-soft` bordé d'`accent-border`, comme le bouton `tinted`. Aucune maquette ne dessine de tags : la pastille reprend les tokens existants sans en créer.
+
+- Sans `onClick`, simple texte. Avec, un `<button>` dont `clickLabel` donne le nom accessible : il doit contenir le nom du tag, que l'utilisateur voit et peut dicter.
+- `onRemove` ajoute une croix, bouton distinct nommé par `removeLabel` (par défaut "Retirer facture").
+- Un nom long est tronqué à la largeur disponible, et reste lisible en entier au survol (`title`).
+
 ### Modal
 
 Fenêtre modale sur `<dialog>` natif, ouverte par `showModal()` : le focus y reste piégé, l'arrière-plan devient inerte, Échap la ferme et le focus revient au bouton d'origine.
@@ -221,12 +235,16 @@ Icône `FileText`, nom et taille lisible (`formatFileSize`) d'un fichier, sur la
 ### FileRow
 
 ```tsx
-<ul className="flex flex-col gap-3">
-  {files.map((file) => <FileRow key={file.id} file={file} onDelete={setToDelete} />)}
+<ul aria-labelledby={headingId} className="flex flex-col gap-3">
+  {files.map((file) => (
+    <FileRow key={file.id} file={file} onDelete={setToDelete} onTagSelect={changeTagFilter} />
+  ))}
 </ul>
 ```
 
-Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", un cadenas s'il a un mot de passe, un bouton "Supprimer" et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien.
+Ligne de l'historique (`src/components/files/`), à poser dans une liste `<ul>`. Elle reçoit un fichier de `GET /files` et affiche l'icône de son type (`FileTypeIcon`), son nom tronqué, son échéance (`expirationLabel`) ou "Expiré", ses tags, un cadenas s'il a un mot de passe, un bouton "Supprimer" et un lien "Accéder" vers sa page de téléchargement. Une ligne expirée n'a pas de lien.
+
+Les tags sont une liste (`<ul aria-label="Tags">`) de pastilles `Tag` cliquables : un clic appelle `onTagSelect` avec le nom du tag, et la page filtre l'historique sur lui. Chaque ligne contenant sa propre liste, la liste de l'historique est nommée par le titre de la page (`aria-labelledby`), ce qui permet de l'atteindre sans ambiguïté, en test comme au lecteur d'écran.
 
 "Supprimer" appelle `onDelete` avec le fichier, sans rien supprimer : la confirmation revient à la page (`DeleteFileDialog`). Il figure aussi sur une ligne expirée, contrairement à la maquette desktop, qui le réserve aux fichiers actifs : c'est le seul moyen de retirer de l'historique un fichier dont l'objet a été purgé, l'historique n'étant borné par rien d'autre (voir `architectureDecisions/auto_expiration.md`). L'état actif ou expiré est celui renvoyé par l'API (`status`), pas recalculé dans le navigateur.
 
