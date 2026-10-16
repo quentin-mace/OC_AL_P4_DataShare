@@ -1,0 +1,81 @@
+name: End-to-end tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'DataShare_API/**'
+      - 'DataShare_Front/**'
+      - 'e2e/**'
+      - 'compose.yaml'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    paths:
+      - 'DataShare_API/**'
+      - 'DataShare_Front/**'
+      - 'e2e/**'
+      - 'compose.yaml'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Passphrase jetable, propre au job : rien a stocker dans les secrets du depot.
+      - name: Create API local env
+        run: echo "JWT_PASSPHRASE=$(openssl rand -hex 32)" > DataShare_API/.env.local
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Install API dependencies
+        run: docker compose run --rm php composer install --no-interaction --prefer-dist
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      - name: Prepare database and JWT keys
+        run: |
+          docker compose exec -T php bin/console doctrine:migrations:migrate --no-interaction
+          docker compose exec -T php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction
+
+      # Le front installe ses dependances au demarrage du conteneur : on attend
+      # qu'il serve la page, et que l'API reponde (410 sur un lien inconnu
+      # prouve que PHP et la base sont joignables).
+      - name: Wait for the application
+        run: |
+          timeout 300 bash -c 'until curl -sf http://localhost:5173 > /dev/null; do sleep 3; done'
+          timeout 120 bash -c 'until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/downloads/00000000000000000000000000000000)" = 410 ]; do sleep 3; done'
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: make install
+
+      - name: Check e2e types and formatting
+        working-directory: e2e
+        run: |
+          make typecheck
+          make format-check
+
+      - name: Run Cypress
+        working-directory: e2e
+        run: make run
+
+      - name: Upload screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: e2e/cypress/screenshots/
+          if-no-files-found: ignore
+
+      - name: Show application logs
+        if: failure()
+        run: docker compose logs --tail=200 php nginx front
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
