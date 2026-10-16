@@ -28,6 +28,12 @@ jobs:
       - name: Create API local env
         run: echo "JWT_PASSPHRASE=$(openssl rand -hex 32)" > DataShare_API/.env.local
 
+      # Le conteneur front tourne en "node" (uid 1000) et son npm install de
+      # demarrage reecrit package-lock.json : le checkout appartient a
+      # l'utilisateur du runner (uid 1001). Runner jetable, droits ouverts.
+      - name: Let the front container write its checkout
+        run: chmod -R a+rwX DataShare_Front
+
       - name: Build images
         run: docker compose build
 
