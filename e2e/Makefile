@@ -8,8 +8,8 @@ export HOST_GID := $(shell id -g)
 
 DC = docker compose --profile e2e run --rm --entrypoint
 
-install: ## Installe les dependances npm
-	$(DC) npm e2e install
+install: ## Installe les dependances npm, telles que fixees par package-lock.json
+	$(DC) npm e2e ci
 
 run: ## Lance les tests en headless (Electron)
 	$(DC) cypress e2e run

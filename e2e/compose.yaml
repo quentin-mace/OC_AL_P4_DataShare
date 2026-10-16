@@ -18,3 +18,7 @@ services:
     environment:
       # Le binaire est deja dans l'image : npm install n'a pas a le telecharger.
       CYPRESS_INSTALL_BINARY: '0'
+      # Un uid sans compte dans l'image (1001 en CI) aurait "/" pour HOME, ou
+      # npm ne peut pas ecrire son cache. Le binaire Cypress, lui, reste lu
+      # depuis CYPRESS_CACHE_FOLDER (/root/.cache/Cypress, fixe par l'image).
+      HOME: /tmp
