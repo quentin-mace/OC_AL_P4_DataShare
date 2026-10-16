@@ -11,3 +11,5 @@ include:
       - DataShare_API/compose.yaml
       - DataShare_API/compose.override.yaml
   - path: DataShare_Front/compose.yaml
+  # Tests end-to-end : service sous profil, absent d'un "docker compose up".
+  - path: e2e/compose.yaml
