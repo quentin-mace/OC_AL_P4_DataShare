@@ -1,0 +1,24 @@
+services:
+  # Lance par "make run" (profil e2e) : ne demarre pas avec le reste de la stack.
+  # L'image embarque Cypress et ses navigateurs, rien a installer sur le poste.
+  e2e:
+    image: cypress/included:16.1.1
+    profiles: [e2e]
+    # Le reseau de l'hote : l'application est jointe sur les memes URLs que
+    # depuis un navigateur (localhost:5173, :8080 et :8333, cette derniere etant
+    # signee dans l'URL presignee). Fonctionne sous Linux uniquement.
+    network_mode: host
+    working_dir: /e2e
+    # L'utilisateur du poste plutot que root : node_modules, captures et
+    # telechargements restent modifiables hors du conteneur. L'image laisse
+    # /root (cache du binaire Cypress) ouvert en ecriture a tous.
+    user: '${HOST_UID:-1000}:${HOST_GID:-1000}'
+    volumes:
+      - ./:/e2e
+    environment:
+      # Le binaire est deja dans l'image : npm install n'a pas a le telecharger.
+      CYPRESS_INSTALL_BINARY: '0'
+      # Un uid sans compte dans l'image (1001 en CI) aurait "/" pour HOME, ou
+      # npm ne peut pas ecrire son cache. Le binaire Cypress, lui, reste lu
+      # depuis CYPRESS_CACHE_FOLDER (/root/.cache/Cypress, fixe par l'image).
+      HOME: /tmp

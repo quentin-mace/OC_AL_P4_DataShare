@@ -96,3 +96,33 @@ src/
 ```
 
 Les tokens de design et les règles d'usage des composants sont décrits dans le [guide de l'interface](docs/ui_guide.md), les choix techniques dans [tech_stack.md](docs/architectureDecisions/tech_stack.md).
+
+## Tests end-to-end (e2e)
+
+Stack : Cypress 16 et Testing Library. Les tests visent l'application entière (front, API, stockage S3) telle que la stack racine la sert. Ils vivent donc dans un projet autonome, `e2e/`, qui ne dépend d'aucun des deux autres et ne passe que par leurs URLs publiques.
+
+### Lancer
+
+```bash
+docker compose up -d   # depuis la racine : la stack complète doit tourner
+cd e2e
+make install           # première fois : dépendances npm
+make run               # tous les scénarios, en headless
+```
+
+Cypress tourne dans l'image `cypress/included` (service `e2e`, sous profil, absent d'un `docker compose up`) : rien à installer sur le poste. Le conteneur utilise le réseau de l'hôte pour joindre `localhost:5173`, `:8080` et `:8333` comme un navigateur. Cela ne fonctionne que sous Linux. `make open` ouvre l'interface de Cypress directement sur le poste (Node 20 ou plus).
+
+### Scénarios
+
+| Spec | Couvre |
+|---|---|
+| `auth.cy.ts` | inscription puis connexion par les formulaires, mot de passe refusé, espace personnel protégé |
+| `upload.cy.ts` | envoi anonyme depuis l'accueil, envoi avec tag depuis l'espace personnel, vérifiés aussi côté API |
+| `download.cy.ts` | lien protégé : mauvais puis bon mot de passe, contenu téléchargé comparé à l'original ; lien inconnu |
+
+La base de développement n'est jamais remise à zéro : chaque test crée son propre compte (`e2e-...@example.test`) et ses propres fichiers. Les limites de tentatives (connexion, mot de passe de téléchargement) ne débordent donc pas d'un test à l'autre, et les scénarios se relancent à volonté. En CI, le workflow `e2e.yml` monte la stack complète et lance les mêmes cibles.
+
+```bash
+make typecheck      # vérifie les types des specs
+make format-check   # vérifie le formatage (make format corrige)
+```
