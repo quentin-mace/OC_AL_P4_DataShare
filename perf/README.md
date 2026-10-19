@@ -32,15 +32,20 @@ cherche par paliers.
 ```bash
 make fixtures                                  # genere ~1,6 Go de fichiers de test
 make load                                      # les quatre paliers a la suite
-make load-step PAYLOAD=1G VUS=1 ITERATIONS=1   # un seul palier
+make load-step PAYLOAD=1GB VUS=1 ITERATIONS=1  # un seul palier
 ```
 
-| Palier | Envois simultanés | Envois par VU |
-| ------ | ----------------- | ------------- |
-| 10 Mo  | 5                 | 4             |
-| 100 Mo | 3                 | 2             |
-| 500 Mo | 2                 | 1             |
-| 1 Go   | 1                 | 1             |
+| Palier  | Octets        | Envois simultanés | Envois par VU |
+| ------- | ------------- | ----------------- | ------------- |
+| `10MB`  | 10 000 000    | 5                 | 4             |
+| `100MB` | 100 000 000   | 3                 | 2             |
+| `500MB` | 500 000 000   | 2                 | 1             |
+| `1GB`   | 1 000 000 000 | 1                 | 1             |
+
+Les tailles sont décimales, et le dernier palier vise exactement la limite du contrat :
+`Assert\File(maxSize: '1G')` compte en puissances de 1000, les suffixes de Symfony n'étant
+binaires que doublés d'un `i`. Un fichier généré en 1024³ octets est refusé en 422, ce qui
+mesurerait le validateur plutôt que le transfert.
 
 La concurrence baisse quand la taille monte, et ce n'est pas une précaution de confort : k6
 construit le corps multipart en mémoire, donc un envoi de 1 Go coûte environ autant de RAM au
