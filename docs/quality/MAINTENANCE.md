@@ -177,8 +177,12 @@ puis `make install` ramène l'état d'avant, à l'identique. Même chose avec `p
 **Une migration échoue à mi-chemin.** `make migrate ARGS="prev"` revient d'un cran, à condition que la
 migration ait un `down()` qui fonctionne : c'est la raison du test de retour en arrière avant de pousser.
 
-**Des tests fonctionnels échouent en local alors que la CI est verte.** Vider le cache de test avant toute
-autre hypothèse, surtout après un changement de groupe de sérialisation ou d'attribut.
+**Des tests échouent en local alors que la CI est verte.** Vider le cache Symfony avant toute autre
+hypothèse, surtout après un changement de groupe de sérialisation ou d'attribut. Celui de test et celui de
+développement sont distincts, et les tests de bout en bout dépendent du second.
+
+**Une réponse d'API a perdu un champ, sans que rien n'ait changé.** Même cause, cache de développement
+obsolète : `docker compose exec php bin/console cache:clear`.
 
 **Le front ne voit pas une dépendance installée.** `node_modules` vit dans un volume Docker, distinct de
 celui de l'hôte. Un `npm install` lancé sur le poste ne sert qu'à l'IDE ; c'est `make install` qui peuple le

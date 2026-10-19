@@ -160,10 +160,19 @@ suivante.
   comptes et les fichiers qu'ils ont créés.
 - **`make run` ne fonctionne que sous Linux.** Le conteneur Cypress utilise le réseau de l'hôte pour joindre
   `localhost:5173`, `:8080` et `:8333` comme le ferait un navigateur. Ailleurs, `make open` reste possible.
-- **Un cache Symfony de test obsolète fait échouer des tests fonctionnels** sans que le code soit en cause,
-  typiquement après un changement de groupe de sérialisation. En cas d'échec inexplicable en local alors que
-  la CI est verte, vider le cache avant de chercher plus loin :
-  `docker compose run --rm -e APP_ENV=test php bin/console cache:clear`.
+- **Un cache Symfony obsolète fait échouer des tests sans que le code soit en cause**, typiquement après un
+  changement de groupe de sérialisation. La CI part d'un cache vide, un poste non. En cas d'échec
+  inexplicable en local alors que la CI est verte, vider le cache avant de chercher plus loin. Le cache de
+  test et celui de développement sont séparés, et les tests de bout en bout dépendent du second :
+
+  ```bash
+  cd DataShare_API
+  docker compose run --rm -e APP_ENV=test php bin/console cache:clear   # fait echouer PHPUnit
+  docker compose exec php bin/console cache:clear                       # fait echouer Cypress
+  ```
+
+  Le symptôme côté bout en bout est trompeur : un champ manquant dans une réponse d'API fait échouer un
+  rendu du front, et c'est le front qui semble en cause.
 
 ## Voir aussi
 
