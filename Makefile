@@ -36,5 +36,5 @@ audit-images: ## Scanne les images Docker avec Trivy (conteneurise, rien a insta
 			--timeout 20m "$$image" || exit 1; \
 	done
 
-html: ## Regenere docs/html/index.html depuis README.md
+html: ## Regenere docs/html/index.html depuis README.md (sur le poste, Node 20+)
 	node docs/html/build.mjs

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataShare</title>
+    <style>
+      /* Reprend les tokens de l'application (DataShare_Front/src/index.css),
+         ecrits en dur : la page doit s'ouvrir hors ligne, sans build. */
+      :root {
+        --canvas: #fdf8f4;
+        --surface: #ffffff;
+        --ink: #2b2118;
+        --ink-muted: #6f6257;
+        --border: #ece1d6;
+        --accent: #f0803c;
+        --accent-soft: #ffefe4;
+        --accent-strong: #b8521a;
+        --code-bg: #f6efe8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font-size: 17px;
+        line-height: 1.65;
+      }
+
+      main {
+        max-width: 48rem;
+        margin: 0 auto;
+        padding: 3.5rem 1.5rem 6rem;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        font-weight: 650;
+      }
+
+      h1 {
+        font-size: 2.4rem;
+        margin: 0 0 1.5rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        margin: 3rem 0 1rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      h3 {
+        font-size: 1.15rem;
+        margin: 2rem 0 0.75rem;
+      }
+
+      p,
+      ul,
+      ol {
+        margin: 0 0 1.1rem;
+      }
+
+      li {
+        margin-bottom: 0.4rem;
+      }
+
+      a {
+        color: var(--accent-strong);
+        text-decoration-color: var(--border);
+        text-underline-offset: 0.2em;
+      }
+
+      a:hover {
+        text-decoration-color: currentColor;
+      }
+
+      code {
+        background: var(--code-bg);
+        border-radius: 0.3rem;
+        padding: 0.1rem 0.35rem;
+        font-size: 0.88em;
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+      }
+
+      pre {
+        background: var(--ink);
+        color: #f6efe8;
+        border-radius: 0.65rem;
+        padding: 1rem 1.15rem;
+        overflow-x: auto;
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+        color: inherit;
+        font-size: inherit;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 1.5rem;
+        font-size: 0.95rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 0.6rem 0.8rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--accent-soft);
+        font-weight: 600;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      blockquote {
+        margin: 0 0 1.1rem;
+        padding-left: 1rem;
+        border-left: 3px solid var(--accent);
+        color: var(--ink-muted);
+      }
+
+      footer {
+        margin-top: 4rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+        color: var(--ink-muted);
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 40rem) {
+        body {
+          font-size: 16px;
+        }
+
+        main {
+          padding: 2rem 1rem 4rem;
+        }
+
+        h1 {
+          font-size: 1.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main><!--CONTENT--></main>
+    <footer>
+      <p>
+        Page produite depuis <code>README.md</code> par <code>make html</code>. Ne pas la modifier a la main.
+      </p>
+    </footer>
+  </body>
+</html>

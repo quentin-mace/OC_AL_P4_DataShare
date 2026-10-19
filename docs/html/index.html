@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataShare</title>
+    <style>
+      /* Reprend les tokens de l'application (DataShare_Front/src/index.css),
+         ecrits en dur : la page doit s'ouvrir hors ligne, sans build. */
+      :root {
+        --canvas: #fdf8f4;
+        --surface: #ffffff;
+        --ink: #2b2118;
+        --ink-muted: #6f6257;
+        --border: #ece1d6;
+        --accent: #f0803c;
+        --accent-soft: #ffefe4;
+        --accent-strong: #b8521a;
+        --code-bg: #f6efe8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font-size: 17px;
+        line-height: 1.65;
+      }
+
+      main {
+        max-width: 48rem;
+        margin: 0 auto;
+        padding: 3.5rem 1.5rem 6rem;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        font-weight: 650;
+      }
+
+      h1 {
+        font-size: 2.4rem;
+        margin: 0 0 1.5rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        margin: 3rem 0 1rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      h3 {
+        font-size: 1.15rem;
+        margin: 2rem 0 0.75rem;
+      }
+
+      p,
+      ul,
+      ol {
+        margin: 0 0 1.1rem;
+      }
+
+      li {
+        margin-bottom: 0.4rem;
+      }
+
+      a {
+        color: var(--accent-strong);
+        text-decoration-color: var(--border);
+        text-underline-offset: 0.2em;
+      }
+
+      a:hover {
+        text-decoration-color: currentColor;
+      }
+
+      code {
+        background: var(--code-bg);
+        border-radius: 0.3rem;
+        padding: 0.1rem 0.35rem;
+        font-size: 0.88em;
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+      }
+
+      pre {
+        background: var(--ink);
+        color: #f6efe8;
+        border-radius: 0.65rem;
+        padding: 1rem 1.15rem;
+        overflow-x: auto;
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+        color: inherit;
+        font-size: inherit;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 1.5rem;
+        font-size: 0.95rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 0.6rem 0.8rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--accent-soft);
+        font-weight: 600;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      blockquote {
+        margin: 0 0 1.1rem;
+        padding-left: 1rem;
+        border-left: 3px solid var(--accent);
+        color: var(--ink-muted);
+      }
+
+      footer {
+        margin-top: 4rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+        color: var(--ink-muted);
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 40rem) {
+        body {
+          font-size: 16px;
+        }
+
+        main {
+          padding: 2rem 1rem 4rem;
+        }
+
+        h1 {
+          font-size: 1.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main><h1>DataShare</h1>
+<p>Partage de fichiers par lien, avec expiration, tags et mot de passe optionnel. Projet du cours &quot;Pilotez le
+développement d&#39;une application full-stack complète&quot; de la formation Architecte Logiciel d&#39;OpenClassrooms.</p>
+<p>API Symfony 8 et API Platform, front React 19 et Vite, PostgreSQL, stockage S3. Tout tourne dans Docker.</p>
+<h2>Prérequis</h2>
+<p>Docker et Docker Compose. Rien d&#39;autre à installer, ni PHP, ni Node, ni PostgreSQL.</p>
+<h2>Démarrer</h2>
+<pre><code class="language-bash">cd DataShare_API
+make init              # dependances PHP, cles JWT, base de donnees migree
+cd ..
+docker compose up -d   # demarre l&#39;API et le front ensemble
+</code></pre>
+<p>Le front installe ses dépendances npm à son premier démarrage, comptez une minute avant qu&#39;il réponde.</p>
+<table>
+<thead>
+<tr>
+<th>Quoi</th>
+<th>Adresse</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Application</td>
+<td><a href="http://localhost:5173">http://localhost:5173</a></td>
+</tr>
+<tr>
+<td>API, documentation interactive comprise</td>
+<td><a href="http://localhost:8080/api">http://localhost:8080/api</a></td>
+</tr>
+<tr>
+<td>Base de données (Adminer)</td>
+<td><a href="http://localhost:8081">http://localhost:8081</a></td>
+</tr>
+<tr>
+<td>Stockage S3</td>
+<td><a href="http://localhost:8333">http://localhost:8333</a></td>
+</tr>
+</tbody></table>
+<p>Pour Adminer : système PostgreSQL, serveur <code>database</code> (pré-rempli), puis utilisateur, mot de passe et base
+depuis <code>DataShare_API/.env</code>, soit <code>app</code> / <code>!ChangeMe!</code> / <code>app</code> par défaut.</p>
+<p>Ensuite, <code>docker compose up -d</code> et <code>docker compose down</code> depuis la racine suffisent au quotidien.</p>
+<h2>Les commandes utiles</h2>
+<p>Chaque projet a son <code>Makefile</code>, où la liste complète des cibles est commentée.</p>
+<table>
+<thead>
+<tr>
+<th>Où</th>
+<th>Commande</th>
+<th>Ce qu&#39;elle fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>racine</td>
+<td><code>docker compose up -d</code> / <code>down</code></td>
+<td>démarre ou arrête toute la stack</td>
+</tr>
+<tr>
+<td>racine</td>
+<td><code>make audit</code></td>
+<td>cherche les vulnérabilités des dépendances</td>
+</tr>
+<tr>
+<td><code>DataShare_API</code></td>
+<td><code>make test</code></td>
+<td>lance les tests PHPUnit</td>
+</tr>
+<tr>
+<td><code>DataShare_API</code></td>
+<td><code>make coverage</code></td>
+<td>les tests avec le rapport de couverture</td>
+</tr>
+<tr>
+<td><code>DataShare_API</code></td>
+<td><code>make lint</code></td>
+<td>CS-Fixer et PHPStan, sans rien modifier</td>
+</tr>
+<tr>
+<td><code>DataShare_API</code></td>
+<td><code>make qa</code></td>
+<td>corrige le style puis lance PHPStan</td>
+</tr>
+<tr>
+<td><code>DataShare_API</code></td>
+<td><code>make migrate</code></td>
+<td>joue les migrations en attente</td>
+</tr>
+<tr>
+<td><code>DataShare_API</code></td>
+<td><code>make migration</code></td>
+<td>génère une migration depuis les entités</td>
+</tr>
+<tr>
+<td><code>DataShare_Front</code></td>
+<td><code>make test</code></td>
+<td>lance les tests Vitest</td>
+</tr>
+<tr>
+<td><code>DataShare_Front</code></td>
+<td><code>make coverage</code></td>
+<td>les tests avec couverture, seuil 70 %</td>
+</tr>
+<tr>
+<td><code>DataShare_Front</code></td>
+<td><code>make lint</code></td>
+<td>oxlint et vérification du formatage</td>
+</tr>
+<tr>
+<td><code>DataShare_Front</code></td>
+<td><code>make format</code></td>
+<td>corrige le formatage</td>
+</tr>
+<tr>
+<td><code>DataShare_Front</code></td>
+<td><code>make build</code></td>
+<td>vérifie les types puis construit le bundle</td>
+</tr>
+<tr>
+<td><code>e2e</code></td>
+<td><code>make run</code></td>
+<td>les tests de bout en bout, stack démarrée</td>
+</tr>
+</tbody></table>
+<h2>Configuration</h2>
+<p>Les valeurs par défaut sont versionnées et suffisent à travailler en local. Elles sont dans
+<code>DataShare_API/.env</code> et <code>DataShare_Front/.env</code>.</p>
+<p>Ce qui vous est propre va dans un fichier <code>.env.local</code> à côté, jamais commité :</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Fichier</th>
+<th>À quoi elle sert</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>JWT_PASSPHRASE</code></td>
+<td><code>DataShare_API/.env.local</code></td>
+<td>protège les clés JWT, créée par <code>make init</code></td>
+</tr>
+<tr>
+<td><code>VITE_API_URL</code></td>
+<td><code>DataShare_Front/.env.local</code></td>
+<td>adresse de l&#39;API appelée par le navigateur</td>
+</tr>
+</tbody></table>
+<h2>Bon à savoir</h2>
+<ul>
+<li><strong><code>node_modules</code> vit dans un volume Docker</strong>, pas sur votre disque. Un <code>npm install</code> lancé sur le poste ne
+sert qu&#39;à votre éditeur.</li>
+<li><strong>Ne lancez pas le front seul et la stack racine en même temps.</strong> Les deux publient le port 5173. Soit
+<code>docker compose up -d</code> depuis la racine, soit <code>make up</code> dans chaque dossier, pas les deux.</li>
+<li><strong>Les migrations sont la source unique du schéma.</strong> <code>doctrine:schema:update</code> n&#39;est pas utilisé ici.</li>
+<li><strong>Les tests ne touchent pas votre base de développement</strong>, ils ont la leur.</li>
+<li><strong>Les tests de bout en bout ne fonctionnent que sous Linux</strong>, le conteneur Cypress utilisant le réseau de
+l&#39;hôte.</li>
+</ul>
+<h2>Pour aller plus loin</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Pour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="../quality/TESTING.md">TESTING.md</a></td>
+<td>le plan de tests, les commandes et la couverture</td>
+</tr>
+<tr>
+<td><a href="../quality/SECURITY.md">SECURITY.md</a></td>
+<td>les mesures de sécurité, les scans et leurs limites</td>
+</tr>
+<tr>
+<td><a href="../quality/MAINTENANCE.md">MAINTENANCE.md</a></td>
+<td>mettre à jour les dépendances sans rien casser</td>
+</tr>
+<tr>
+<td><a href="../ui_guide.md">Guide de l&#39;interface</a></td>
+<td>écrire un écran du front sans réinventer un composant</td>
+</tr>
+<tr>
+<td><a href="../specs/API/contrat-api.md">Contrat d&#39;API</a></td>
+<td>les routes, les champs et les codes d&#39;erreur</td>
+</tr>
+<tr>
+<td><a href="../architectureDecisions/">Décisions d&#39;architecture</a></td>
+<td>pourquoi le projet est fait comme ça</td>
+</tr>
+</tbody></table>
+<p>Ce README existe aussi en <a href="index.html">version HTML</a>, plus agréable à lire hors de GitHub.</p></main>
+    <footer>
+      <p>
+        Page produite depuis <code>README.md</code> par <code>make html</code>. Ne pas la modifier a la main.
+      </p>
+    </footer>
+  </body>
+</html>
