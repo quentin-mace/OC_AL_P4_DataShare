@@ -41,8 +41,11 @@ test-db: ## Cree la base de test et y joue les migrations
 test-keys: ## Genere les cles JWT dediees aux tests (sans passphrase, voir .env.test)
 	$(DC) -e APP_ENV=test php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction
 
-test: test-db test-keys ## Lance les tests (PHPUnit + couverture PCOV)
+test: test-db test-keys ## Lance les tests (PHPUnit)
 	$(DC) -e APP_ENV=test php vendor/bin/phpunit
+
+coverage: test-db test-keys ## Lance les tests avec couverture (PCOV, rapport HTML dans var/coverage/)
+	$(DC) -e APP_ENV=test php vendor/bin/phpunit --coverage-text --coverage-html var/coverage
 
 lint: ## Verifie le style (CS-Fixer) et l'analyse statique (PHPStan)
 	$(DC) php composer lint:cs
