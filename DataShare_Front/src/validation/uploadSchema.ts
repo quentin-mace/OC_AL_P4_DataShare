@@ -5,8 +5,11 @@ import { tagRuleMessage } from './tagSchema'
 // aller-retour, coûteux ici puisqu'il porte tout le fichier : le serveur
 // reste seul à faire foi.
 
-// Assert\File(maxSize: '1G') : unité binaire, 1 Go = 1024³ octets.
-export const MAX_FILE_SIZE = 1024 ** 3
+// Assert\File(maxSize: '1G') : unité décimale, 1 Go = 1000³ octets. Les
+// suffixes de Symfony ne valent 1024 que doublés d'un i (Ki, Mi, Gi).
+// Compté en 1024³ ici, le formulaire acceptait 73 Mo de plus que le back :
+// l'envoi partait, durait une minute, puis échouait en 422.
+export const MAX_FILE_SIZE = 1000 ** 3
 
 // FORBIDDEN_FILE_EXTENSIONS du .env du back, comparées sans casse.
 export const FORBIDDEN_EXTENSIONS = [
