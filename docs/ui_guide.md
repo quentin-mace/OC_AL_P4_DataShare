@@ -406,6 +406,24 @@ Les couples `ink-muted` sur `surface` (16,7), `white` sur `dark` (14), `info-ink
 
 Foncer `accent` et `coral` suffirait à corriger l'essentiel, en changeant deux lignes de `src/index.css`. C'est l'intérêt des tokens sémantiques.
 
+## Organisation du code
+
+```
+src/
+├── api/                client axios (URL de base, injection du JWT)
+├── auth/               stockage du jeton et lecture de son expiration
+├── browser/            ce qui ne peut passer que par le navigateur (téléchargement)
+├── components/
+│   ├── ui/             composants génériques des maquettes (Button, Input, Select, Callout, Switch)
+│   ├── layout/         gabarits de page, Header, Copyright
+│   └── <domaine>/      composants propres à une fonctionnalité (files, upload)
+├── format/             mise en forme des tailles et des dates
+├── pages/              une page par écran
+├── routes/             routes et URLs de l'application (paths.ts)
+├── validation/         schémas zod des formulaires
+└── test/               configuration de Vitest
+```
+
 ## Ajouter un composant
 
 1. Vérifier qu'aucun composant existant ne couvre le besoin, éventuellement avec une variante de plus.
