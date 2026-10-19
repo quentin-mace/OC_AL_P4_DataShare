@@ -14,6 +14,8 @@ use App\State\TagResolver;
 use League\Flysystem\FilesystemOperator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\PasswordHasher\PasswordHasherInterface;
@@ -55,6 +57,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver($owner, []),
             $this->securityFor($owner),
+            new NullLogger(),
         );
 
         $file = $processor->process($this->uploadInput(), new Post());
@@ -65,6 +68,42 @@ final class FileUploadProcessorTest extends TestCase
         self::assertNotNull($file->getDownloadToken());
         self::assertNotNull($file->getStorageKey());
         self::assertStringEndsWith('.pdf', $file->getStorageKey());
+    }
+
+    /**
+     * The size and the storage write duration are the two figures PERF.md is
+     * built on, and this is the only place that knows either of them.
+     */
+    public function testItLogsTheStoredSizeAndWriteDuration(): void
+    {
+        $owner = (new User())->setEmail(self::OWNER_EMAIL);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('info')
+            ->with(
+                'file.stored',
+                $this->callback(static function (mixed $context): bool {
+                    self::assertIsArray($context);
+                    self::assertSame(strlen('contenu du fichier'), $context['size_bytes']);
+                    self::assertIsFloat($context['storage_write_ms']);
+                    self::assertSame('application/pdf', $context['mime_type']);
+                    self::assertFalse($context['anonymous']);
+
+                    return true;
+                }),
+            );
+
+        $processor = new FileUploadProcessor(
+            $this->passthroughPersistProcessor(),
+            $this->createStub(FilesystemOperator::class),
+            $this->createStub(PasswordHasherInterface::class),
+            $this->tagResolver($owner, []),
+            $this->securityFor($owner),
+            $logger,
+        );
+
+        $processor->process($this->uploadInput(), new Post());
     }
 
     /**
@@ -80,6 +119,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver($owner, []),
             $this->securityFor($owner),
+            new NullLogger(),
         );
 
         $first = $processor->process($this->uploadInput(), new Post());
@@ -101,6 +141,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver($owner, []),
             $this->securityFor($owner),
+            new NullLogger(),
         );
 
         $file = $processor->process($input, new Post());
@@ -131,6 +172,7 @@ final class FileUploadProcessorTest extends TestCase
             $hasher,
             $this->tagResolver($owner, []),
             $this->securityFor($owner),
+            new NullLogger(),
         );
 
         $file = $processor->process($input, new Post());
@@ -152,6 +194,7 @@ final class FileUploadProcessorTest extends TestCase
             $hasher,
             $this->tagResolver($owner, []),
             $this->securityFor($owner),
+            new NullLogger(),
         );
 
         $file = $processor->process($this->uploadInput(), new Post());
@@ -173,6 +216,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver($owner, [$existingTag]),
             $this->securityFor($owner),
+            new NullLogger(),
         );
 
         $file = $processor->process($input, new Post());
@@ -193,6 +237,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver($owner, []),
             $this->securityFor($owner),
+            new NullLogger(),
         );
 
         $file = $processor->process($input, new Post());
@@ -218,6 +263,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver($owner, []),
             $this->securityFor($owner),
+            new NullLogger(),
         );
 
         $processor->process($this->uploadInput(), new Post());
@@ -238,6 +284,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver(new User(), []),
             $this->securityFor(null),
+            new NullLogger(),
         );
 
         $file = $processor->process($this->uploadInput(), new Post());
@@ -263,6 +310,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver(new User(), []),
             $this->securityFor(null),
+            new NullLogger(),
         );
 
         $this->expectException(\LogicException::class);
@@ -285,6 +333,7 @@ final class FileUploadProcessorTest extends TestCase
             $this->createStub(PasswordHasherInterface::class),
             $this->tagResolver(new User(), []),
             $security,
+            new NullLogger(),
         );
 
         $this->expectException(\LogicException::class);

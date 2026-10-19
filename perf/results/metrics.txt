@@ -1,0 +1,16 @@
+Metriques du back, fenetre : 7m
+
+== Temps de reponse par route ==
+ROUTE                                            N   MEDIANE_MS  MAX_MS
+POST _api_/files{._format}_post -> 201           29  275.5       72678.0
+DELETE _api_/files/{id}{._format}_delete -> 204  29  65.1        7216.8
+POST _api_/register_post -> 201                  4   587.0       1339.8
+POST api_login -> 200                            4   647.5       731.9
+GET _api_/files{._format}_get_collection -> 200  4   58.4        108.2
+
+== Ecriture dans le stockage objet, par taille de fichier ==
+TAILLE_MIB  N   MEDIANE_MS  MAX_MS   DEBIT_MIB_S
+9           20  140.5       207.7    67.9
+95          6   1431.5      1549.4   66.6
+476         2   44908.6     44908.6  10.6
+953         1   37798.0     37798.0  25.2

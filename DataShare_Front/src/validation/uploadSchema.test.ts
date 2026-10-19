@@ -52,6 +52,14 @@ describe('uploadSchema', () => {
     ])
   })
 
+  // La valeur en dur, et pas MAX_FILE_SIZE : le test ci-dessus reste vert quoi
+  // qu'elle vaille, et c'est ainsi qu'un seuil en 1024³ a pu cohabiter avec un
+  // back qui refuse au-delà de 1000³. Ce que vérifie celui-ci, c'est l'accord
+  // avec Assert\File(maxSize: '1G'), dont les suffixes sont décimaux.
+  it('counts 1 GB the way the back-end does, in powers of 1000', () => {
+    expect(MAX_FILE_SIZE).toBe(1_000_000_000)
+  })
+
   it.each(['setup.exe', 'SCRIPT.JS', 'archive.tar.sh'])('rejects the forbidden file %s', (name) => {
     expect(messagesFor({ file: new File(['x'], name) })).toEqual([
       ['file', `Les fichiers .${fileExtension(name)} ne sont pas acceptés.`],

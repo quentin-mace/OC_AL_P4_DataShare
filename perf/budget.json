@@ -1,0 +1,24 @@
+[
+  {
+    "path": "/*",
+    "_comment": [
+      "Tailles transferees, donc apres la compression gzip de nginx, et non",
+      "les tailles sur disque qu'affiche 'npm run build'. Mesure de depart :",
+      "JS 168 Kio transferes pour 532 Kio sur disque, CSS 5,6 pour 24,5, et",
+      "55 Kio de polices woff2, deja compressees. Les seuils laissent environ",
+      "20 % de marge : de quoi ajouter un ecran sans alerte, pas de quoi",
+      "laisser passer une dependance de trop."
+    ],
+    "resourceSizes": [
+      { "resourceType": "script", "budget": 200 },
+      { "resourceType": "stylesheet", "budget": 10 },
+      { "resourceType": "font", "budget": 80 },
+      { "resourceType": "document", "budget": 5 },
+      { "resourceType": "total", "budget": 300 }
+    ],
+    "resourceCounts": [
+      { "resourceType": "third-party", "budget": 0 },
+      { "resourceType": "total", "budget": 10 }
+    ]
+  }
+]

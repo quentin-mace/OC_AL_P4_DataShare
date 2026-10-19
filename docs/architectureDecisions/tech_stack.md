@@ -233,12 +233,53 @@ L'API authentifie par un en-tête `Authorization: Bearer`, le front doit donc po
 - **Format de réponse de l'API** : JSON simple, et non le JSON-LD par défaut d'API Platform. Le front est écrit à la main et n'exploiterait pas les métadonnées de description. Conséquence connue, une collection est un simple tableau, sans enveloppe de pagination. Sans impact, le MVP n'impose ni tri ni pagination.
 - **Mot de passe sur un fichier** : documenté à part, dans `download_password.md`. Six caractères minimum, hachés par un service distinct de celui des comptes, et cinq tentatives par lien et par quinze minutes sur la route de téléchargement.
 - **Expiration automatique des fichiers** : documentée à part, dans `auto_expiration.md`. Purge quotidienne par commande console et cron système, portant sur l'objet stocké seul, la ligne d'historique étant conservée.
-- **Outillage de tests** : PHPUnit + PCOV, Vitest + React Testing Library, Cypress, k6 (plutot gatling ou octoperf).
+- **Outillage de tests** : PHPUnit + PCOV, Vitest + React Testing Library, Cypress, k6. Ce dernier était resté ouvert, voir "Outillage des mesures de performance" plus bas.
 - **Isolation des tests back** : `dama/doctrine-test-bundle`, qui enveloppe chaque test dans une transaction annulée en fin de test. Écarté, le nettoyage manuel des tables, dont le coût se répète à chaque nouvelle classe de test au lieu d'être payé une fois. Les tests visent la base `app_test`, Doctrine suffixant déjà le nom de la base en environnement de test.
+
+## Outillage des mesures de performance
+
+**Statut** : accepté, 2026-10-19, ticket [#79](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/79)
+
+La décision du #1 laissait la question ouverte, en notant "k6 (plutot gatling ou octoperf)". L'étape 5 demandant trois mesures distinctes, elle est tranchée ici d'un bloc, le critère d'arbitrage du #1 restant le même.
+
+| Mesure | Outil retenu |
+|---|---|
+| Montée en charge de `POST /api/files` | k6, image `grafana/k6:2.3.0` |
+| Budget de bundle et scores navigateur | `lighthouse` 13.5, servi par `nginx:alpine` |
+| Temps de réponse et taille des fichiers | `symfony/monolog-bundle`, canal `metrics` au format JSON |
+
+L'outillage vit dans un projet `perf/` à la racine, sur le modèle de `e2e/` : son `compose.yaml` sous profil, son `Makefile`, ses dépendances propres.
+
+### Pourquoi k6
+
+C'est l'outil que l'énoncé nomme, il se lance par une image Docker sans rien installer, et son scénario est un fichier JavaScript versionné dans le dépôt, donc rejouable par un tiers.
+
+| Alternative | Raison de l'écarter |
+|---|---|
+| Gatling | Sait envoyer un corps de requête en streaming depuis le disque, ce qui le met plus à l'aise sur le 1 Go. Mais une JVM et un DSL Java ou Scala à apprendre, contre le critère du #1. |
+| OctoPerf | Interface graphique au-dessus de JMeter, donc pas de scénario versionné, et un compte sur un service externe à créer pour un livrable qui doit rester reproductible. |
+
+Limite assumée : k6 construit le corps multipart en mémoire, un envoi de 1 Go coûte donc autant de RAM au poste de mesure qu'au serveur. La concurrence baisse à mesure que la taille monte, faute de quoi c'est la machine qui lance le test qu'on mesurerait.
+
+### Lighthouse plutôt que Lighthouse CI
+
+Lighthouse CI était le premier choix : budgets et assertions natifs, et un lancement unique pour les deux besoins. Son paquet `@lhci/cli` apporte dix-sept vulnérabilités transitives, dont onze de sévérité haute (`extract-zip`, `tmp`, `basic-ftp`), qu'aucun correctif non cassant ne résout. Le paquet `lighthouse` seul n'en a aucune, et `make audit` était vert sur les trois autres projets.
+
+Ce qui est perdu, l'assertion de budget et la médiane multi-passages, tient dans deux scripts shell de `perf/bin/`, qui lisent le rapport JSON avec `jq`.
+
+Ce qui est gagné n'était pas cherché : le build est servi par un `nginx:alpine`, image déjà épinglée et déjà scannée par `make audit-images`, au lieu du serveur statique de Lighthouse CI. La mesure porte donc sur une configuration proche de celle que le déploiement du [#23](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/23) mettra en place, compression gzip comprise. Les tailles mesurées sont des tailles transférées, pas des tailles sur disque.
+
+### Logs structurés
+
+Le back n'écrivait aucun log applicatif, seules les lignes d'accès de nginx existaient. Elles connaissent des URLs et des octets, pas des routes ni la taille de l'objet réellement écrit dans le stockage.
+
+Monolog écrit donc une ligne JSON par requête (`RequestMetricsListener`, sur `kernel.terminate`) et une par objet stocké (`FileUploadProcessor`), sur un canal `metrics` séparé du log applicatif, vers la sortie d'erreur du conteneur. Les deux lignes sont complémentaires : la première donne le temps total passé dans PHP, la seconde isole l'écriture dans S3.
+
+La durée court depuis `REQUEST_TIME_FLOAT`, que PHP-FPM pose une fois le corps de la requête reçu. Sur un envoi de 1 Go, elle ne compte donc pas le transfert réseau, qui reste visible dans les chiffres de k6. Lire les deux ensemble est précisément ce qui permet de situer la limite.
 
 ## Points de vigilance
 
-- **Limites PHP.** L'upload transitant par l'API, `upload_max_filesize`, `post_max_size`, `max_execution_time` et les limites du reverse proxy doivent accepter 1 Go, et être documentés dans les scripts de déploiement. Limite à mesurer dans PERF.md, l'upload par URL présignée étant l'axe d'optimisation identifié.
+- **Limites PHP.** L'upload transitant par l'API, `upload_max_filesize`, `post_max_size`, `max_execution_time` et les limites du reverse proxy doivent accepter 1 Go, et être documentés dans les scripts de déploiement. Limite mesurée par `perf/`, résultats dans `perf/results/`, analyse dans PERF.md au [#21](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/21) ; l'upload par URL présignée reste l'axe d'optimisation identifié.
 - **Endpoint MinIO joignable depuis le navigateur.** Résolu au #8. La signature de l'URL présignée couvre son nom d'hôte, l'URL ne peut donc pas être réécrite après signature sans devenir invalide. Deux clients S3 coexistent : `aws.s3.client` sur l'adresse interne du conteneur, pour les lectures et écritures de l'application, et `aws.s3.public_client` sur l'adresse joignable par le navigateur, exposé comme storage Flysystem `public.storage` et réservé à l'émission des URLs présignées.
 - **Surcharge de `STORAGE_S3_PUBLIC_ENDPOINT` en déploiement.** Sa valeur par défaut vise l'environnement local. Oubliée en production, elle n'empêche pas le démarrage et produit des URLs présignées injoignables, donc une panne visible seulement côté navigateur. À intégrer à la checklist du #23.
 - **Opérations hors CRUD API Platform.** L'upload multipart et l'émission d'URL présignée demandent des opérations personnalisées et une documentation OpenAPI manuelle.

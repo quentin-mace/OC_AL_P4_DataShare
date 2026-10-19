@@ -9,6 +9,7 @@ use App\Entity\File;
 use App\Entity\User;
 use App\Enum\FileType;
 use League\Flysystem\FilesystemOperator;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -35,6 +36,11 @@ final readonly class FileUploadProcessor implements ProcessorInterface
         private PasswordHasherInterface $passwordHasher,
         private TagResolver $tagResolver,
         private Security $security,
+        // The only place that knows how many bytes actually went to storage,
+        // and how long writing them took. RequestMetricsListener sees the
+        // request as a whole, not the share between PHP and S3.
+        #[Autowire(service: 'monolog.logger.metrics')]
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -69,11 +75,20 @@ final readonly class FileUploadProcessor implements ProcessorInterface
             throw new \RuntimeException(sprintf('Could not open the uploaded file "%s" for reading.', $uploadedFile->getPathname()));
         }
 
+        $writeStartedAt = microtime(true);
+
         try {
             $this->storage->writeStream($storageKey, $stream);
         } finally {
             fclose($stream);
         }
+
+        $this->logger->info('file.stored', [
+            'size_bytes' => $uploadedFile->getSize(),
+            'storage_write_ms' => round((microtime(true) - $writeStartedAt) * 1000, 1),
+            'mime_type' => $mimeType,
+            'anonymous' => null === $owner,
+        ]);
 
         $file = new File();
         $file->setName($uploadedFile->getClientOriginalName());

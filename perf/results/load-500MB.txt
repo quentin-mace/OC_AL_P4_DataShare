@@ -1,0 +1,288 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: k6/upload.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 2 max VUs, 30m30s max duration (incl. graceful stop):
+              * upload: 1 iterations for each of 2 VUs (maxDuration: 30m0s, gracefulStop: 30s)
+
+
+Run      [ 100% ] setup()
+upload   [   0% ]
+
+Run      [ 100% ] setup()
+upload   [   0% ]
+
+running (00m02.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m00.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m03.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m01.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m04.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m02.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m05.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m03.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m06.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m04.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m07.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m05.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m08.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m06.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m09.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m07.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m10.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m08.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m11.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m09.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m12.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m10.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m13.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m11.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m14.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m12.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m15.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m13.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m16.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m14.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m17.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m15.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m18.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m16.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m19.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m17.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m20.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m18.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m21.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m19.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m22.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m20.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m23.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m21.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m24.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m22.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m25.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m23.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m26.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m24.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m27.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m25.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m28.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m26.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m29.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m27.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m30.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m28.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m31.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m29.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m32.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m30.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m33.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m31.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m34.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m32.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m35.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m33.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m36.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m34.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m37.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m35.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m38.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m36.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m39.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m37.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m40.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m38.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m41.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m39.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m42.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m40.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m43.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m41.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m44.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m42.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m45.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m43.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m48.2s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m45.9s/30m0s  0/2 iters, 1 per VU
+
+running (00m48.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m46.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m49.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m47.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m50.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m48.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m51.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m49.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m52.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m50.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m53.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m51.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m54.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m52.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m55.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m53.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m56.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m54.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m57.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m55.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m58.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m56.3s/30m0s  0/2 iters, 1 per VU
+
+running (00m59.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m57.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m00.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m58.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m01.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  00m59.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m02.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m00.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m03.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m01.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m04.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m02.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m05.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m03.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m06.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m04.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m07.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m05.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m08.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m06.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m09.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m07.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m10.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m08.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m11.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m09.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m12.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m10.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m13.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m11.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m14.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m12.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m15.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m13.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m16.6s), 2/2 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 2 VUs  01m14.3s/30m0s  0/2 iters, 1 per VU
+
+running (01m17.6s), 0/2 VUs, 2 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 2 VUs  01m14.9s/30m0s  2/2 iters, 1 per VU
+time="2026-10-19T13:17:48Z" level=info msg="test account left behind: perf-1792415790398@datashare.test" source=console
+
+
+  █ THRESHOLDS 
+
+    checks
+    ✓ 'rate==1.00' rate=100.00%
+
+    http_req_failed
+    ✓ 'rate==0.00' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 4       0.05144/s
+    checks_succeeded...: 100.00% 4 out of 4
+    checks_failed......: 0.00%   0 out of 4
+
+    ✓ upload accepted (201)
+    ✓ download link returned
+
+    HTTP
+    http_req_duration..............: avg=21.26s min=66.36ms med=733.26ms max=1m13s p(90)=1m13s p(95)=1m13s
+      { expected_response:true }...: avg=21.26s min=66.36ms med=733.26ms max=1m13s p(90)=1m13s p(95)=1m13s
+    http_req_failed................: 0.00%  0 out of 7
+    http_reqs......................: 7      0.09002/s
+
+    EXECUTION
+    iteration_duration.............: avg=1m14s  min=1m14s   med=1m14s    max=1m14s p(90)=1m14s p(95)=1m14s
+    iterations.....................: 2      0.02572/s
+    vus............................: 0      min=0      max=2
+    vus_max........................: 2      min=2      max=2
+
+    NETWORK
+    data_received..................: 4.5 kB 58 B/s
+    data_sent......................: 1.0 GB 13 MB/s
+
+
+
+
+running (01m17.8s), 0/2 VUs, 2 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 2 VUs  01m14.9s/30m0s  2/2 iters, 1 per VU
