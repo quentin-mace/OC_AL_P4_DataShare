@@ -13,3 +13,5 @@ include:
   - path: DataShare_Front/compose.yaml
   # Tests end-to-end : service sous profil, absent d'un "docker compose up".
   - path: e2e/compose.yaml
+  # Mesures de performance : meme principe, sous le profil perf.
+  - path: perf/compose.yaml

@@ -1,0 +1,52 @@
+services:
+  # Test de charge k6, lance par "make load" (profil perf) : ne demarre pas
+  # avec le reste de la stack. Meme montage que le service e2e, pour les memes
+  # raisons (voir e2e/compose.yaml).
+  k6:
+    image: grafana/k6:2.3.0
+    profiles: [perf]
+    # Le reseau de l'hote : l'API est jointe sur l'URL du navigateur
+    # (localhost:8080), celle-la meme que le front appelle.
+    network_mode: host
+    working_dir: /perf
+    # L'utilisateur du poste plutot que root : les resumes ecrits dans
+    # results/ restent modifiables hors du conteneur.
+    user: '${HOST_UID:-1000}:${HOST_GID:-1000}'
+    volumes:
+      - ./:/perf
+
+  # Sert le build de production du front le temps des mesures. L'image est
+  # celle que le back utilise deja, donc rien de plus a epingler ni a scanner,
+  # et la configuration ressemble a celle que le deploiement du #23 mettra en
+  # place : c'est un vrai serveur web qui est mesure, pas un bac a sable.
+  front-preview:
+    image: nginx:alpine
+    profiles: [perf]
+    ports:
+      # Sur la boucle locale, et pas sur 5173 qui est au serveur de dev Vite :
+      # les deux peuvent ainsi tourner en meme temps.
+      - '127.0.0.1:5174:80'
+    volumes:
+      - ../DataShare_Front/dist:/usr/share/nginx/html:ro
+      - ./docker/nginx/front.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # Lighthouse. L'image de Cypress est reutilisee telle quelle : elle embarque
+  # Chrome et Node, elle est deja epinglee et deja scannee par
+  # "make audit-images" a la racine. Une image dediee ajouterait une brique a
+  # surveiller pour le meme resultat.
+  lighthouse:
+    image: cypress/included:16.1.1
+    profiles: [perf]
+    network_mode: host
+    working_dir: /perf
+    user: '${HOST_UID:-1000}:${HOST_GID:-1000}'
+    # Chrome ecrit ses fichiers temporaires dans /dev/shm, dont la taille par
+    # defaut (64 Mo) le fait tomber en cours de mesure.
+    shm_size: 1gb
+    volumes:
+      - ./:/perf
+    environment:
+      # Un uid sans compte dans l'image aurait "/" pour HOME, ou npm ne peut
+      # pas ecrire son cache.
+      HOME: /tmp
+      CHROME_PATH: /usr/bin/google-chrome

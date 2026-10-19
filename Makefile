@@ -1,8 +1,8 @@
 .PHONY: up down audit audit-images html
 
 # Point d'entree de la stack complete. Les cibles de developpement vivent dans
-# les Makefile de chaque projet (DataShare_API, DataShare_Front, e2e) ; on ne
-# trouve ici que ce qui porte sur le depot entier.
+# les Makefile de chaque projet (DataShare_API, DataShare_Front, e2e, perf) ;
+# on ne trouve ici que ce qui porte sur le depot entier.
 
 # Images a scanner : celles que la stack tire telles quelles. L'image php est
 # construite a partir de php:8.4-fpm, c'est donc sa base que l'on scanne.
@@ -21,10 +21,11 @@ up: ## Demarre back et front ensemble
 down: ## Arrete la stack complete
 	docker compose down
 
-audit: ## Cherche les vulnerabilites des dependances des trois projets
+audit: ## Cherche les vulnerabilites des dependances des quatre projets
 	$(MAKE) -C DataShare_API audit
 	$(MAKE) -C DataShare_Front audit
 	$(MAKE) -C e2e audit
+	$(MAKE) -C perf audit
 
 audit-images: ## Scanne les images Docker avec Trivy (conteneurise, rien a installer)
 	@for image in $(IMAGES); do \

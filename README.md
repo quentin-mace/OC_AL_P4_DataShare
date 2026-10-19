@@ -52,6 +52,9 @@ Chaque projet a son `Makefile`, où la liste complète des cibles est commentée
 | `DataShare_Front` | `make format` | corrige le formatage |
 | `DataShare_Front` | `make build` | vérifie les types puis construit le bundle |
 | `e2e` | `make run` | les tests de bout en bout, stack démarrée |
+| `perf` | `make load` | la montée en charge sur l'endpoint d'upload |
+| `perf` | `make front` | le budget de bundle et les scores Lighthouse |
+| `perf` | `make metrics` | les temps de réponse tirés des logs du back |
 
 ## Configuration
 

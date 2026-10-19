@@ -1,0 +1,6 @@
+node_modules/
+# Fichiers de test, jusqu'a 1 Go piece : regeneres par "make fixtures".
+fixtures/
+# Dossier de travail de Lighthouse CI, les rapports exploitables sont
+# recopies dans results/lighthouse/.
+.lighthouseci/
