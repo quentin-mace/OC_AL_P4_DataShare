@@ -1,4 +1,4 @@
-.PHONY: install run open typecheck format format-check
+.PHONY: install run open typecheck format format-check audit
 
 # Les tests visent la stack complete : la demarrer d'abord depuis la racine
 # du depot (docker compose up -d --wait). Le service e2e est defini ici et
@@ -26,3 +26,6 @@ format: ## Formate les fichiers (Prettier)
 
 format-check: ## Verifie le formatage
 	$(DC) npx e2e prettier --check .
+
+audit: ## Cherche les vulnerabilites connues des dependances npm
+	$(DC) npm e2e audit

@@ -1,128 +1,90 @@
-# OC_AL_P4_DataShare
-Meta projet pour piloter le développement du projet "Data Share" pour le cours "Pilotez le développement d'une application full-stack complète" de la formation Architecte Logiciel d'OpenClassrooms
+# DataShare
 
-## Backend (DataShare_API)
+Partage de fichiers par lien, avec expiration, tags et mot de passe optionnel. Projet du cours "Pilotez le
+développement d'une application full-stack complète" de la formation Architecte Logiciel d'OpenClassrooms.
 
-Stack : Symfony 8 + API Platform, PostgreSQL, SeaweedFS (S3). Tout tourne via Docker, seul Docker Compose est nécessaire en local.
+API Symfony 8 et API Platform, front React 19 et Vite, PostgreSQL, stockage S3. Tout tourne dans Docker.
 
-### Démarrer
+## Prérequis
+
+Docker et Docker Compose. Rien d'autre à installer, ni PHP, ni Node, ni PostgreSQL.
+
+## Démarrer
 
 ```bash
 cd DataShare_API
-make init   # dépendances, clés JWT, démarrage de la stack et migrations
+make init              # dependances PHP, cles JWT, base de donnees migree
+cd ..
+docker compose up -d   # demarre l'API et le front ensemble
 ```
 
-- API : http://localhost:8080 (doc interactive sur `/api`)
-- Stockage S3 : http://localhost:8333 (pas de console web, s'inspecte à l'AWS CLI ou depuis un client S3)
-- Adminer (base de données) : http://localhost:8081 — système PostgreSQL, serveur `database` (pré-rempli), utilisateur/mot de passe/base dans `DataShare_API/.env` (`app` / `!ChangeMe!` / `app` par défaut)
+Le front installe ses dépendances npm à son premier démarrage, comptez une minute avant qu'il réponde.
 
-Ensuite, `make up` et `make down` suffisent au quotidien.
-
-### Base de données
-
-Les migrations sont la source unique du schéma, `doctrine:schema:update` n'est pas utilisé pour faire évoluer la base.
-
-```bash
-make migrate     # joue les migrations en attente
-make migration   # génère une migration depuis les entités
-make schema      # vérifie que les entités et la base concordent
-```
-
-Après avoir modifié une entité, générer la migration, la relire, puis la jouer et tester le retour en arrière (`make migrate ARGS="first"`). Tant que la branche n'est pas fusionnée, régénérer la migration existante plutôt que d'en empiler une seconde.
-
-### Tests et qualité
-
-```bash
-make test      # prépare la base de test, puis lance PHPUnit
-make test-db   # crée la base de test et y joue les migrations
-make lint      # CS-Fixer et PHPStan, sans rien modifier
-make qa        # corrige le style puis lance PHPStan
-```
-
-Les tests tournent sur une base distincte, `app_test`, que `make test-db` crée et migre. La base de développement n'est donc jamais touchée. Chaque test s'exécute dans une transaction annulée à la fin, grâce à `dama/doctrine-test-bundle` : les tests sont indépendants les uns des autres et n'ont aucun nettoyage à faire.
-
-Les commandes s'exécutent dans le conteneur `php` déjà démarré quand la stack tourne, et dans un conteneur jetable sinon. Toutes les cibles disponibles sont dans `DataShare_API/Makefile`.
-
-Les variables d'environnement sont dans `DataShare_API/.env` ; les secrets locaux (comme `JWT_PASSPHRASE`) vont dans `DataShare_API/.env.local`, non commité.
-
-## Frontend (DataShare_Front)
-
-Stack : React 19 + Vite + TypeScript, react-router, axios, react-hook-form + zod, Tailwind CSS v4. Le serveur de dev tourne lui aussi dans Docker.
-
-### Démarrer
-
-```bash
-cd DataShare_Front
-make init   # dépendances npm puis serveur de dev
-```
-
-- Application : http://localhost:5173
-- L'API est appelée par le navigateur à l'adresse de `VITE_API_URL` (`DataShare_Front/.env`, `http://localhost:8080/api` par défaut). Une surcharge locale va dans `DataShare_Front/.env.local`, non commité.
-
-Ensuite, `make up` et `make down` suffisent au quotidien.
-
-### Tout démarrer depuis la racine
-
-```bash
-docker compose up -d   # back et front ensemble
-docker compose down
-```
-
-Le `compose.yaml` racine inclut ceux des deux projets. Il reprend le nom de projet du back, et donc ses volumes (base, stockage) : la stack complète démarre sur les mêmes données que le back lancé seul. Ne pas lancer le front seul et la stack racine en même temps, le port 5173 étant commun.
-
-### Tests et qualité
-
-```bash
-make test       # Vitest
-make coverage   # Vitest avec couverture (seuil 70 %), rapport HTML dans coverage/
-make lint       # oxlint et vérification du formatage (Prettier)
-make format     # corrige le formatage
-make build      # vérifie les types (tsc) puis construit le bundle
-```
-
-`node_modules` vit dans un volume Docker, séparé de celui de l'hôte (binaires natifs différents) : un `npm install` sur l'hôte ne sert qu'à l'IDE. Toutes les cibles sont dans `DataShare_Front/Makefile`.
-
-### Organisation du code
-
-```
-src/
-├── api/                client axios (URL de base, injection du JWT)
-├── components/
-│   ├── ui/             composants génériques des maquettes (Button, Input, Select, Callout, Switch)
-│   └── layout/         gabarits de page, Header, Copyright
-├── pages/              une page par écran
-├── routes/             routes et URLs de l'application (paths.ts)
-└── test/               configuration de Vitest
-```
-
-Les tokens de design et les règles d'usage des composants sont décrits dans le [guide de l'interface](docs/ui_guide.md), les choix techniques dans [tech_stack.md](docs/architectureDecisions/tech_stack.md).
-
-## Tests end-to-end (e2e)
-
-Stack : Cypress 16 et Testing Library. Les tests visent l'application entière (front, API, stockage S3) telle que la stack racine la sert. Ils vivent donc dans un projet autonome, `e2e/`, qui ne dépend d'aucun des deux autres et ne passe que par leurs URLs publiques.
-
-### Lancer
-
-```bash
-docker compose up -d   # depuis la racine : la stack complète doit tourner
-cd e2e
-make install           # première fois : dépendances npm
-make run               # tous les scénarios, en headless
-```
-
-Cypress tourne dans l'image `cypress/included` (service `e2e`, sous profil, absent d'un `docker compose up`) : rien à installer sur le poste. Le conteneur utilise le réseau de l'hôte pour joindre `localhost:5173`, `:8080` et `:8333` comme un navigateur. Cela ne fonctionne que sous Linux. `make open` ouvre l'interface de Cypress directement sur le poste (Node 20 ou plus).
-
-### Scénarios
-
-| Spec | Couvre |
+| Quoi | Adresse |
 |---|---|
-| `auth.cy.ts` | inscription puis connexion par les formulaires, mot de passe refusé, espace personnel protégé |
-| `upload.cy.ts` | envoi anonyme depuis l'accueil, envoi avec tag depuis l'espace personnel, vérifiés aussi côté API |
-| `download.cy.ts` | lien protégé : mauvais puis bon mot de passe, contenu téléchargé comparé à l'original ; lien inconnu |
+| Application | http://localhost:5173 |
+| API, documentation interactive comprise | http://localhost:8080/api |
+| Base de données (Adminer) | http://localhost:8081 |
+| Stockage S3 | http://localhost:8333 |
 
-La base de développement n'est jamais remise à zéro : chaque test crée son propre compte (`e2e-...@example.test`) et ses propres fichiers. Les limites de tentatives (connexion, mot de passe de téléchargement) ne débordent donc pas d'un test à l'autre, et les scénarios se relancent à volonté. En CI, le workflow `e2e.yml` monte la stack complète et lance les mêmes cibles.
+Pour Adminer : système PostgreSQL, serveur `database` (pré-rempli), puis utilisateur, mot de passe et base
+depuis `DataShare_API/.env`, soit `app` / `!ChangeMe!` / `app` par défaut.
 
-```bash
-make typecheck      # vérifie les types des specs
-make format-check   # vérifie le formatage (make format corrige)
-```
+Ensuite, `docker compose up -d` et `docker compose down` depuis la racine suffisent au quotidien.
+
+## Les commandes utiles
+
+Chaque projet a son `Makefile`, où la liste complète des cibles est commentée.
+
+| Où | Commande | Ce qu'elle fait |
+|---|---|---|
+| racine | `docker compose up -d` / `down` | démarre ou arrête toute la stack |
+| racine | `make audit` | cherche les vulnérabilités des dépendances |
+| `DataShare_API` | `make test` | lance les tests PHPUnit |
+| `DataShare_API` | `make coverage` | les tests avec le rapport de couverture |
+| `DataShare_API` | `make lint` | CS-Fixer et PHPStan, sans rien modifier |
+| `DataShare_API` | `make qa` | corrige le style puis lance PHPStan |
+| `DataShare_API` | `make migrate` | joue les migrations en attente |
+| `DataShare_API` | `make migration` | génère une migration depuis les entités |
+| `DataShare_Front` | `make test` | lance les tests Vitest |
+| `DataShare_Front` | `make coverage` | les tests avec couverture, seuil 70 % |
+| `DataShare_Front` | `make lint` | oxlint et vérification du formatage |
+| `DataShare_Front` | `make format` | corrige le formatage |
+| `DataShare_Front` | `make build` | vérifie les types puis construit le bundle |
+| `e2e` | `make run` | les tests de bout en bout, stack démarrée |
+
+## Configuration
+
+Les valeurs par défaut sont versionnées et suffisent à travailler en local. Elles sont dans
+`DataShare_API/.env` et `DataShare_Front/.env`.
+
+Ce qui vous est propre va dans un fichier `.env.local` à côté, jamais commité :
+
+| Variable | Fichier | À quoi elle sert |
+|---|---|---|
+| `JWT_PASSPHRASE` | `DataShare_API/.env.local` | protège les clés JWT, créée par `make init` |
+| `VITE_API_URL` | `DataShare_Front/.env.local` | adresse de l'API appelée par le navigateur |
+
+## Bon à savoir
+
+- **`node_modules` vit dans un volume Docker**, pas sur votre disque. Un `npm install` lancé sur le poste ne
+  sert qu'à votre éditeur.
+- **Ne lancez pas le front seul et la stack racine en même temps.** Les deux publient le port 5173. Soit
+  `docker compose up -d` depuis la racine, soit `make up` dans chaque dossier, pas les deux.
+- **Les migrations sont la source unique du schéma.** `doctrine:schema:update` n'est pas utilisé ici.
+- **Les tests ne touchent pas votre base de développement**, ils ont la leur.
+- **Les tests de bout en bout ne fonctionnent que sous Linux**, le conteneur Cypress utilisant le réseau de
+  l'hôte.
+
+## Pour aller plus loin
+
+| Document | Pour |
+|---|---|
+| [TESTING.md](docs/quality/TESTING.md) | le plan de tests, les commandes et la couverture |
+| [SECURITY.md](docs/quality/SECURITY.md) | les mesures de sécurité, les scans et leurs limites |
+| [MAINTENANCE.md](docs/quality/MAINTENANCE.md) | mettre à jour les dépendances sans rien casser |
+| [Guide de l'interface](docs/ui_guide.md) | écrire un écran du front sans réinventer un composant |
+| [Contrat d'API](docs/specs/API/contrat-api.md) | les routes, les champs et les codes d'erreur |
+| [Décisions d'architecture](docs/architectureDecisions/) | pourquoi le projet est fait comme ça |
+
+Ce README existe aussi en [version HTML](docs/html/index.html), plus agréable à lire hors de GitHub.

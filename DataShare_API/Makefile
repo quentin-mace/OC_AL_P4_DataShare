@@ -1,4 +1,4 @@
-.PHONY: init env install keys migrate migration schema up down test-db test-keys test lint lint-fix cs-fixer phpstan qa
+.PHONY: init env install keys migrate migration schema up down test-db test-keys test coverage lint lint-fix cs-fixer phpstan qa audit
 
 # Prefixe pour executer une commande dans le conteneur php : reutilise le
 # conteneur en cours si la stack est demarree, sinon en cree un jetable. Les
@@ -41,8 +41,11 @@ test-db: ## Cree la base de test et y joue les migrations
 test-keys: ## Genere les cles JWT dediees aux tests (sans passphrase, voir .env.test)
 	$(DC) -e APP_ENV=test php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction
 
-test: test-db test-keys ## Lance les tests (PHPUnit + couverture PCOV)
+test: test-db test-keys ## Lance les tests (PHPUnit)
 	$(DC) -e APP_ENV=test php vendor/bin/phpunit
+
+coverage: test-db test-keys ## Lance les tests avec couverture (PCOV, rapport HTML dans var/coverage/)
+	$(DC) -e APP_ENV=test php vendor/bin/phpunit --coverage-text --coverage-html var/coverage
 
 lint: ## Verifie le style (CS-Fixer) et l'analyse statique (PHPStan)
 	$(DC) php composer lint:cs
@@ -60,3 +63,6 @@ phpstan: ## Lance PHPStan seul (make phpstan ARGS="--level=max")
 qa: ## Corrige le style puis lance PHPStan (CS_ARGS et PHPSTAN_ARGS separes)
 	$(MAKE) cs-fixer ARGS="$(CS_ARGS)"
 	$(MAKE) phpstan ARGS="$(PHPSTAN_ARGS)"
+
+audit: ## Cherche les vulnerabilites connues des dependances PHP
+	$(DC) php composer audit
