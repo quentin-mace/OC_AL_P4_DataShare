@@ -1,4 +1,4 @@
-.PHONY: init install up down build lint format format-check test test-watch coverage
+.PHONY: init install up down build lint format test test-watch coverage audit
 
 # Meme principe que le Makefile du back : reutilise le conteneur front s'il
 # tourne, sinon en cree un jetable. Expansion tardive (=), reevaluee a chaque cible.
@@ -33,3 +33,6 @@ test-watch: ## Lance les tests en continu
 
 coverage: ## Lance les tests avec couverture (seuil 70 %)
 	$(DC) front npm run test:coverage
+
+audit: ## Cherche les vulnerabilites connues des dependances npm
+	$(DC) front npm audit

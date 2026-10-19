@@ -1,4 +1,4 @@
-.PHONY: init env install keys migrate migration schema up down test-db test-keys test lint lint-fix cs-fixer phpstan qa
+.PHONY: init env install keys migrate migration schema up down test-db test-keys test coverage lint lint-fix cs-fixer phpstan qa audit
 
 # Prefixe pour executer une commande dans le conteneur php : reutilise le
 # conteneur en cours si la stack est demarree, sinon en cree un jetable. Les
@@ -60,3 +60,6 @@ phpstan: ## Lance PHPStan seul (make phpstan ARGS="--level=max")
 qa: ## Corrige le style puis lance PHPStan (CS_ARGS et PHPSTAN_ARGS separes)
 	$(MAKE) cs-fixer ARGS="$(CS_ARGS)"
 	$(MAKE) phpstan ARGS="$(PHPSTAN_ARGS)"
+
+audit: ## Cherche les vulnerabilites connues des dependances PHP
+	$(DC) php composer audit
