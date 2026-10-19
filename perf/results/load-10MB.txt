@@ -1,0 +1,69 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: k6/upload.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 5 max VUs, 30m30s max duration (incl. graceful stop):
+              * upload: 4 iterations for each of 5 VUs (maxDuration: 30m0s, gracefulStop: 30s)
+
+
+Run      [ 100% ] setup()
+upload   [   0% ]
+
+running (00m02.0s), 5/5 VUs, 10 complete and 0 interrupted iterations
+upload   [  50% ] 5 VUs  00m00.8s/30m0s  10/20 iters, 4 per VU
+
+running (00m03.0s), 0/5 VUs, 20 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 5 VUs  00m01.6s/30m0s  20/20 iters, 4 per VU
+
+running (00m04.0s), 0/5 VUs, 20 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 5 VUs  00m01.6s/30m0s  20/20 iters, 4 per VU
+time="2026-10-19T13:15:56Z" level=info msg="test account left behind: perf-1792415752062@datashare.test" source=console
+
+
+  █ THRESHOLDS 
+
+    checks
+    ✓ 'rate==1.00' rate=100.00%
+
+    http_req_failed
+    ✓ 'rate==0.00' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 40      10.04421/s
+    checks_succeeded...: 100.00% 40 out of 40
+    checks_failed......: 0.00%   0 out of 40
+
+    ✓ upload accepted (201)
+    ✓ download link returned
+
+    HTTP
+    http_req_duration..............: avg=220.43ms min=42.03ms  med=238.66ms max=588.69ms p(90)=479.86ms p(95)=494.45ms
+      { expected_response:true }...: avg=220.43ms min=42.03ms  med=238.66ms max=588.69ms p(90)=479.86ms p(95)=494.45ms
+    http_req_failed................: 0.00%  0 out of 43
+    http_reqs......................: 43     10.797526/s
+
+    EXECUTION
+    iteration_duration.............: avg=373.01ms min=256.89ms med=362.95ms max=514.97ms p(90)=501.25ms p(95)=512.7ms 
+    iterations.....................: 20     5.022105/s
+    vus............................: 0      min=0       max=5
+    vus_max........................: 5      min=5       max=5
+
+    NETWORK
+    data_received..................: 28 kB  7.1 kB/s
+    data_sent......................: 200 MB 50 MB/s
+
+
+
+
+running (00m04.0s), 0/5 VUs, 20 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 5 VUs  00m01.6s/30m0s  20/20 iters, 4 per VU

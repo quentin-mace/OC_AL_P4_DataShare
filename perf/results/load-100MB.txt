@@ -1,0 +1,138 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: k6/upload.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 3 max VUs, 30m30s max duration (incl. graceful stop):
+              * upload: 2 iterations for each of 3 VUs (maxDuration: 30m0s, gracefulStop: 30s)
+
+
+Run      [ 100% ] setup()
+upload   [   0% ]
+
+running (00m01.9s), 3/3 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 3 VUs  00m00.7s/30m0s  0/6 iters, 2 per VU
+
+running (00m02.9s), 3/3 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 3 VUs  00m01.7s/30m0s  0/6 iters, 2 per VU
+
+running (00m03.9s), 3/3 VUs, 3 complete and 0 interrupted iterations
+upload   [  50% ] 3 VUs  00m02.7s/30m0s  3/6 iters, 2 per VU
+
+running (00m04.9s), 3/3 VUs, 3 complete and 0 interrupted iterations
+upload   [  50% ] 3 VUs  00m03.7s/30m0s  3/6 iters, 2 per VU
+
+running (00m05.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m04.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m06.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m05.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m07.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m06.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m08.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m07.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m09.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m08.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m10.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m09.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m11.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m10.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m12.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m11.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m13.9s), 2/3 VUs, 4 complete and 0 interrupted iterations
+upload   [  67% ] 3 VUs  00m12.7s/30m0s  4/6 iters, 2 per VU
+
+running (00m14.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m15.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m16.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m17.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m18.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m19.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m20.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m21.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m22.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m23.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m24.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m25.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+
+running (00m26.9s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
+time="2026-10-19T13:16:26Z" level=info msg="test account left behind: perf-1792415758794@datashare.test" source=console
+
+
+  █ THRESHOLDS 
+
+    checks
+    ✓ 'rate==1.00' rate=100.00%
+
+    http_req_failed
+    ✓ 'rate==0.00' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 12      0.432237/s
+    checks_succeeded...: 100.00% 12 out of 12
+    checks_failed......: 0.00%   0 out of 12
+
+    ✓ upload accepted (201)
+    ✓ download link returned
+
+    HTTP
+    http_req_duration..............: avg=2.9s  min=47.84ms med=1.76s max=10.84s p(90)=9.33s  p(95)=10.75s
+      { expected_response:true }...: avg=2.9s  min=47.84ms med=1.76s max=10.84s p(90)=9.33s  p(95)=10.75s
+    http_req_failed................: 0.00%  0 out of 15
+    http_reqs......................: 15     0.540297/s
+
+    EXECUTION
+    iteration_duration.............: avg=5.02s min=1.88s   med=2.11s max=11.04s p(90)=10.99s p(95)=11.01s
+    iterations.....................: 6      0.216119/s
+    vus............................: 0      min=0       max=3
+    vus_max........................: 3      min=3       max=3
+
+    NETWORK
+    data_received..................: 9.7 kB 351 B/s
+    data_sent......................: 600 MB 22 MB/s
+
+
+
+
+running (00m27.8s), 0/3 VUs, 6 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 3 VUs  00m13.0s/30m0s  6/6 iters, 2 per VU
