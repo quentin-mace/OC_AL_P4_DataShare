@@ -194,4 +194,5 @@ volume.
 
 - [SECURITY.md](SECURITY.md), les audits et ce qu'ils ont donné
 - [TESTING.md](TESTING.md), ce qu'il faut rejouer après une mise à jour
+- [PERF.md](PERF.md), les chiffres auxquels comparer après une montée de version
 - [tech_stack.md](../architectureDecisions/tech_stack.md), le choix des briques et leur historique

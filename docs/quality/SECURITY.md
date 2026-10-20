@@ -183,6 +183,7 @@ base des images officielles, et la plupart concernent des bibliothèques que l'a
 ## Voir aussi
 
 - [TESTING.md](TESTING.md), ce que les tests vérifient des règles décrites ici
+- [PERF.md](PERF.md), ce que coûte un gros envoi, et donc ce qu'un upload anonyme non plafonné permet
 - [MAINTENANCE.md](MAINTENANCE.md), la fréquence des audits et la procédure de correction
 - [tech_stack.md](../architectureDecisions/tech_stack.md), les décisions de mot de passe et de stockage du JWT
 - [download_password.md](../architectureDecisions/download_password.md), le mécanisme de limitation
