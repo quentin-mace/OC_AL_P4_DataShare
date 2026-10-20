@@ -85,6 +85,7 @@ Ce qui vous est propre va dans un fichier `.env.local` à côté, jamais commit�
 |---|---|
 | [TESTING.md](docs/quality/TESTING.md) | le plan de tests, les commandes et la couverture |
 | [SECURITY.md](docs/quality/SECURITY.md) | les mesures de sécurité, les scans et leurs limites |
+| [PERF.md](docs/quality/PERF.md) | le budget front, les temps de réponse et ce qui freine les gros envois |
 | [MAINTENANCE.md](docs/quality/MAINTENANCE.md) | mettre à jour les dépendances sans rien casser |
 | [Guide de l'interface](docs/ui_guide.md) | écrire un écran du front sans réinventer un composant |
 | [Contrat d'API](docs/specs/API/contrat-api.md) | les routes, les champs et les codes d'erreur |

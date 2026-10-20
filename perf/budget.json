@@ -3,11 +3,16 @@
     "path": "/*",
     "_comment": [
       "Tailles transferees, donc apres la compression gzip de nginx, et non",
-      "les tailles sur disque qu'affiche 'npm run build'. Mesure de depart :",
-      "JS 168 Kio transferes pour 532 Kio sur disque, CSS 5,6 pour 24,5, et",
-      "55 Kio de polices woff2, deja compressees. Les seuils laissent environ",
-      "20 % de marge : de quoi ajouter un ecran sans alerte, pas de quoi",
-      "laisser passer une dependance de trop."
+      "les tailles sur disque qu'affiche 'npm run build'. Seuils poses sur",
+      "les estimations de Vite : JS 168 ko pour 532 ko sur disque, CSS 5,6",
+      "pour 24,5, et 55 ko de polices woff2, deja compressees. Ils laissent",
+      "environ 20 % de marge : de quoi ajouter un ecran sans alerte, pas de",
+      "quoi laisser passer une dependance de trop.",
+      "",
+      "Attention en les relisant : nginx comprime au niveau 1 faute de",
+      "'gzip_comp_level', la ou Vite estime au niveau par defaut de zlib. Le",
+      "JS reellement transfere pese donc 192,4 Kio, et la marge du poste",
+      "script est de 4 % et non de 20 %. Voir docs/quality/PERF.md."
     ],
     "resourceSizes": [
       { "resourceType": "script", "budget": 200 },

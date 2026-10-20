@@ -78,8 +78,8 @@ Poids transféré sur `/`, et budget de `budget.json` :
 | **total** | **237,7 Kio** | 300 Kio |
 
 Budget respecté sur les trois pages. À noter pour l'analyse : `vite build` avertit que le
-chunk JS dépasse 500 Kio sur disque (532 Kio), l'application n'étant pas découpée en
-plusieurs chunks.
+chunk JS dépasse son seuil d'alerte de 500 ko sur disque (532 ko), l'application n'étant pas
+découpée en plusieurs chunks.
 
 Rapports complets dans `lighthouse/`, un HTML lisible par page.
 
@@ -105,6 +105,28 @@ Tirées des logs JSON du canal `metrics`, sur la fenêtre de la campagne.
 | ~1 Go | 1 | 37,8 s | 25,2 Mio/s |
 
 Le débit d'écriture s'effondre entre 100 Mo et 500 Mo, d'un facteur six. C'est le fait saillant
-de cette campagne, et le premier point à instruire dans PERF.md.
+de cette campagne, instruit par la mesure de contrôle ci-dessous et analysé dans
+[PERF.md](../../docs/quality/PERF.md).
 
 Sortie brute dans `metrics.txt`.
+
+## Mesure de contrôle, 2026-10-20
+
+Ticket [#21](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/21). Le palier 500 Mo
+rejoué seul, poste au repos, d'abord à un envoi puis à deux. Même fichier, même commande, seul
+le nombre d'envois simultanés change.
+
+| Envois simultanés | Durée d'écriture | Débit par écriture | `POST /api/files` vu du serveur | Émis par k6 |
+|---|---|---|---|---|
+| 1 | 2,98 s | 159,9 Mio/s | 4,1 s | 50 Mo/s |
+| 2 | 33,0 s et 52,9 s | 14,5 et 9,0 Mio/s | 64,3 s et 83,9 s | 11 Mo/s |
+
+Les deux écritures du second essai démarrent à la même seconde et se recouvrent entièrement :
+953 Mio en 52,9 s, soit 18 Mio/s agrégés contre 159,9 Mio/s à un seul envoi.
+
+Le second essai retrouve le palier 500 Mo de la campagne du 19 : 42,9 s d'écriture médiane
+contre 44,9 s, soit 4 % d'écart, pour 1 min 26 s de scénario contre 1 min 13 s. La taille du
+fichier n'est donc pas la variable en cause, la concurrence l'est.
+
+Sorties dans `control-500MB-vus1.txt`, `control-500MB-vus2.txt` et `control-500MB-back.txt`,
+ce dernier donnant aussi les écritures une par une avec leur horodatage.

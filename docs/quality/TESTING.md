@@ -177,5 +177,6 @@ suivante.
 ## Voir aussi
 
 - [SECURITY.md](SECURITY.md), ce que les tests de sécurité couvrent et ce qu'ils ne couvrent pas
+- [PERF.md](PERF.md), ce que la mesure de charge a trouvé que les tests ne voient pas
 - [MAINTENANCE.md](MAINTENANCE.md), la place des tests dans une montée de version
 - [Guide de l'interface](../ui_guide.md), les conventions de test des composants front

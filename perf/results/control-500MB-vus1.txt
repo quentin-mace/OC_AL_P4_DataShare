@@ -1,0 +1,87 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: k6/upload.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 1 max VUs, 30m30s max duration (incl. graceful stop):
+              * upload: 1 iterations for each of 1 VUs (maxDuration: 30m0s, gracefulStop: 30s)
+
+
+Run      [ 100% ] setup()
+upload   [   0% ]
+
+Run      [ 100% ] setup()
+upload   [   0% ]
+
+Run      [ 100% ] setup()
+upload   [   0% ]
+
+Run      [ 100% ] setup()
+upload   [   0% ]
+
+running (00m04.9s), 1/1 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 1 VUs  00m00.7s/30m0s  0/1 iters, 1 per VU
+
+running (00m05.9s), 1/1 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 1 VUs  00m01.7s/30m0s  0/1 iters, 1 per VU
+
+running (00m06.9s), 1/1 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 1 VUs  00m02.7s/30m0s  0/1 iters, 1 per VU
+
+running (00m07.9s), 1/1 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 1 VUs  00m03.7s/30m0s  0/1 iters, 1 per VU
+
+running (00m08.9s), 1/1 VUs, 0 complete and 0 interrupted iterations
+upload   [   0% ] 1 VUs  00m04.7s/30m0s  0/1 iters, 1 per VU
+
+running (00m09.9s), 0/1 VUs, 1 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 1 VUs  00m05.4s/30m0s  1/1 iters, 1 per VU
+time="2026-10-20T07:43:14Z" level=info msg="test account left behind: perf-1792482185133@datashare.test" source=console
+
+
+  █ THRESHOLDS 
+
+    checks
+    ✓ 'rate==1.00' rate=100.00%
+
+    http_req_failed
+    ✓ 'rate==0.00' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 2       0.199151/s
+    checks_succeeded...: 100.00% 2 out of 2
+    checks_failed......: 0.00%   0 out of 2
+
+    ✓ upload accepted (201)
+    ✓ download link returned
+
+    HTTP
+    http_req_duration..............: avg=1.81s min=87.46ms med=656.75ms max=4.94s p(90)=4.25s p(95)=4.59s
+      { expected_response:true }...: avg=1.81s min=87.46ms med=656.75ms max=4.94s p(90)=4.25s p(95)=4.59s
+    http_req_failed................: 0.00%  0 out of 5
+    http_reqs......................: 5      0.497877/s
+
+    EXECUTION
+    iteration_duration.............: avg=5.39s min=5.39s   med=5.39s    max=5.39s p(90)=5.39s p(95)=5.39s
+    iterations.....................: 1      0.099575/s
+    vus............................: 0      min=0      max=1
+    vus_max........................: 1      min=1      max=1
+
+    NETWORK
+    data_received..................: 3.2 kB 314 B/s
+    data_sent......................: 500 MB 50 MB/s
+
+
+
+
+running (00m10.0s), 0/1 VUs, 1 complete and 0 interrupted iterations
+upload ✓ [ 100% ] 1 VUs  00m05.4s/30m0s  1/1 iters, 1 per VU
