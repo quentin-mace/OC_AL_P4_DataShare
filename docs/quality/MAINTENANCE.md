@@ -165,6 +165,24 @@ croissance de stockage, qui ne se voit pas à l'échelle d'un prototype.
 Quand la commande existera, sa procédure d'exploitation prendra place ici : horaire en heure creuse, UTC,
 rattrapage automatique d'une exécution manquée, et relance manuelle pour la démonstration.
 
+### Revue du code écrit par l'IA
+
+Le code de ce projet a été écrit par un copilote IA sous supervision humaine, selon la méthode décrite dans
+[ai_usage.md](../ai_usage.md). Sa revue technique fait l'objet d'un document à part,
+[AI_CODE_REVIEW.md](AI_CODE_REVIEW.md), qui relève cinq constats dont trois reproduits par l'exécution. Tous
+ont été corrigés et verrouillés par des tests.
+
+Le plus structurant pour la maintenance est le troisième : un envoi qui échouait après l'écriture de l'objet
+laissait dans le stockage des octets qu'aucune ligne en base ne référençait, hors d'atteinte de la
+suppression manuelle comme de la purge des fichiers expirés décrite plus haut, l'une et l'autre partant de
+l'historique. L'envoi nettoie désormais derrière lui, mais seulement sur les échecs que l'application voit
+passer : un processus tué au mauvais moment laisserait toujours un orphelin. La réconciliation à prévoir
+reste donc la même que celle qu'appellerait l'upload par URL présignée décrit dans [PERF.md](PERF.md), ce qui
+est une raison de traiter les deux ensemble.
+
+Cette revue est à rejouer à chaque montée de version majeure, au même titre que la relecture des images
+Docker.
+
 ## Quand ça casse
 
 **Un conteneur ne démarre pas.** `docker compose logs <service>` depuis la racine. L'ordre compte : la base et
@@ -192,6 +210,7 @@ volume.
 
 ## Voir aussi
 
+- [AI_CODE_REVIEW.md](AI_CODE_REVIEW.md), la revue technique du code écrit par l'IA et ses constats ouverts
 - [SECURITY.md](SECURITY.md), les audits et ce qu'ils ont donné
 - [TESTING.md](TESTING.md), ce qu'il faut rejouer après une mise à jour
 - [PERF.md](PERF.md), les chiffres auxquels comparer après une montée de version

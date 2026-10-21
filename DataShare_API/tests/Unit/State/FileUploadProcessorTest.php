@@ -341,6 +341,114 @@ final class FileUploadProcessorTest extends TestCase
         $processor->process($this->uploadInput(), new Post());
     }
 
+    /**
+     * The object reaches the storage before any row references it, so a
+     * failure after the write would leave bytes nothing can ever reclaim:
+     * neither the history nor the expiry purge, both starting from the row.
+     */
+    public function testItRemovesTheStoredObjectWhenPersistingFails(): void
+    {
+        $owner = (new User())->setEmail(self::OWNER_EMAIL);
+
+        $writtenKey = null;
+        $deletedKey = null;
+
+        $storage = $this->createMock(FilesystemOperator::class);
+        $storage->method('writeStream')->willReturnCallback(
+            static function (string $key) use (&$writtenKey): void {
+                $writtenKey = $key;
+            },
+        );
+        $storage->expects($this->once())->method('delete')->willReturnCallback(
+            static function (string $key) use (&$deletedKey): void {
+                $deletedKey = $key;
+            },
+        );
+
+        $failingPersist = $this->createStub(ProcessorInterface::class);
+        $failingPersist->method('process')->willThrowException(new \RuntimeException('insert failed'));
+
+        $processor = new FileUploadProcessor(
+            $failingPersist,
+            $storage,
+            $this->createStub(PasswordHasherInterface::class),
+            $this->tagResolver($owner, []),
+            $this->securityFor($owner),
+            new NullLogger(),
+        );
+
+        try {
+            $processor->process($this->uploadInput(), new Post());
+            self::fail('The processor was expected to rethrow the persistence failure.');
+        } catch (\RuntimeException $failure) {
+            self::assertSame('insert failed', $failure->getMessage());
+        }
+
+        self::assertNotNull($writtenKey);
+        // The object removed has to be the one just written, not merely "an"
+        // object: a mismatch would delete someone else's file.
+        self::assertSame($writtenKey, $deletedKey);
+    }
+
+    /**
+     * A failed cleanup must not replace the error that caused it: the caller
+     * needs to see why the upload failed, not why the tidying up did.
+     */
+    public function testItReportsTheOriginalFailureWhenTheCleanupAlsoFails(): void
+    {
+        $owner = (new User())->setEmail(self::OWNER_EMAIL);
+
+        $storage = $this->createStub(FilesystemOperator::class);
+        $storage->method('delete')->willThrowException(new \RuntimeException('storage unreachable'));
+
+        $failingPersist = $this->createStub(ProcessorInterface::class);
+        $failingPersist->method('process')->willThrowException(new \RuntimeException('insert failed'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('error')
+            ->with('file.orphaned', $this->anything());
+
+        $processor = new FileUploadProcessor(
+            $failingPersist,
+            $storage,
+            $this->createStub(PasswordHasherInterface::class),
+            $this->tagResolver($owner, []),
+            $this->securityFor($owner),
+            $logger,
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('insert failed');
+
+        $processor->process($this->uploadInput(), new Post());
+    }
+
+    /**
+     * The MIME type is a client-controlled header that only picks an icon, so
+     * an oversized one falls back instead of failing the whole upload.
+     */
+    public function testItFallsBackOnAnOversizedMimeType(): void
+    {
+        $owner = (new User())->setEmail(self::OWNER_EMAIL);
+
+        $input = new FileUploadInput();
+        $input->file = new UploadedFile($this->uploadedFilePath, 'rapport.pdf', 'text/'.str_repeat('x', 300), test: true);
+
+        $processor = new FileUploadProcessor(
+            $this->passthroughPersistProcessor(),
+            $this->createStub(FilesystemOperator::class),
+            $this->createStub(PasswordHasherInterface::class),
+            $this->tagResolver($owner, []),
+            $this->securityFor($owner),
+            new NullLogger(),
+        );
+
+        $file = $processor->process($input, new Post());
+
+        self::assertSame('application/octet-stream', $file->getMimeType());
+    }
+
     private function uploadInput(): FileUploadInput
     {
         $input = new FileUploadInput();

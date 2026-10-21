@@ -1,11 +1,13 @@
 # Plan de tests
 
-**Dernière exécution** : 2026-10-19, ticket [#19](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/19)
+**Dernière exécution** : 2026-10-21, après les correctifs de
+[AI_CODE_REVIEW.md](AI_CODE_REVIEW.md). Campagne précédente le 2026-10-19, ticket
+[#19](https://github.com/quentin-mace/OC_AL_P4_DataShare/issues/19).
 
 | Chaîne | Outils | Tests | Couverture des lignes |
 |---|---|---|---|
-| Back | PHPUnit 13, PCOV | 188 | 89,39 % |
-| Front | Vitest 5, Testing Library | 291 | 99,27 % |
+| Back | PHPUnit 13, PCOV | 197 | 90,56 % |
+| Front | Vitest 5, Testing Library | 294 | 99,27 % |
 | Bout en bout | Cypress 16 | 7 | sans objet |
 
 L'objectif de 70 % est tenu des deux côtés. Il n'est bloquant que côté front, voir "Couverture".
@@ -31,7 +33,8 @@ Une ligne par fonctionnalité critique, avec le critère qui fait foi.
 | Fonctionnalité | Critère d'acceptation | Où c'est vérifié |
 |---|---|---|
 | US01 Upload authentifié | Le fichier arrive dans le stockage, la ligne est créée, un lien est rendu | `FileUploadTest`, `FileUploadProcessorTest`, `UploadDialog.test.tsx`, `upload.cy.ts` |
-| US01 Limites d'upload | Au-delà de 1 Go, extension interdite ou durée hors de 1 à 7 jours, l'envoi est refusé en 422 | `FileUploadTest`, `uploadSchema.test.ts` |
+| US01 Limites d'upload | Au-delà de 1 Go, nom de plus de 255 caractères, extension interdite ou durée hors de 1 à 7 jours, l'envoi est refusé en 422 | `FileUploadTest`, `uploadSchema.test.ts` |
+| US01 Échec d'envoi | Un échec après l'écriture supprime l'objet stocké, sans masquer l'erreur d'origine | `FileUploadProcessorTest` |
 | US02 Téléchargement par lien | Un lien valide rend une URL présignée, le fichier reçu est identique à l'original | `DownloadTest`, `DownloadProcessorTest`, `download.cy.ts` |
 | US02 Lien fermé | Un lien expiré ou inconnu répond 410, sans distinguer les deux cas | `DownloadTest`, `DownloadFileResolverTest` |
 | US03 Création de compte | Un mot de passe trop court ou trop faible est refusé, le mot de passe est haché, jamais rendu | `UserRegistrationTest`, `UserPasswordHasherProcessorTest`, `registerSchema.test.ts`, `auth.cy.ts` |
@@ -88,15 +91,15 @@ make format-check      # formatage
 
 ## Couverture
 
-### Back, PHPUnit et PCOV, 2026-10-19
+### Back, PHPUnit et PCOV, 2026-10-21
 
 ```
-OK (188 tests, 521 assertions)
+OK (197 tests, 559 assertions)
 
 Summary:
-  Classes: 62.06% (18/29)
-  Methods: 83.76% (98/117)
-  Lines:   89.39% (312/349)
+  Classes: 63.33% (19/30)
+  Methods: 84.42% (103/122)
+  Lines:   90.56% (355/392)
 ```
 
 Le taux par classe est plus bas que le taux par ligne, et c'est normal : il ne compte qu'une classe
@@ -104,11 +107,11 @@ entièrement couverte. `App\Entity\User` tire la moyenne vers le bas avec ses ac
 appelés, pas la logique métier. Les `State`, qui portent les décisions, sont à 100 % de lignes à deux
 exceptions près.
 
-### Front, Vitest et v8, 2026-10-19
+### Front, Vitest et v8, 2026-10-21
 
 ```
  Test Files  37 passed (37)
-      Tests  291 passed (291)
+      Tests  294 passed (294)
 
 File               | % Stmts | % Branch | % Funcs | % Lines |
 -------------------|---------|----------|---------|---------|

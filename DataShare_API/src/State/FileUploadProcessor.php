@@ -26,6 +26,16 @@ final readonly class FileUploadProcessor implements ProcessorInterface
     private const int DEFAULT_EXPIRATION_IN_DAYS = 7;
 
     /**
+     * File::$mimeType is a varchar(255) filled from a header the client fully
+     * controls. Refusing the whole upload over a value that only picks an icon
+     * would be out of proportion, so an oversized type falls back to the
+     * neutral one instead.
+     */
+    private const int MAX_MIME_TYPE_LENGTH = 255;
+
+    private const string FALLBACK_MIME_TYPE = 'application/octet-stream';
+
+    /**
      * @param ProcessorInterface<File, File> $persistProcessor
      */
     public function __construct(
@@ -68,7 +78,7 @@ final readonly class FileUploadProcessor implements ProcessorInterface
         // The server-guessed getMimeType() would require the symfony/mime
         // component, not otherwise a project dependency; the client-declared
         // type is the same trust level already accepted for the extension.
-        $mimeType = $uploadedFile->getClientMimeType();
+        $mimeType = $this->boundMimeType($uploadedFile->getClientMimeType());
 
         $stream = fopen($uploadedFile->getPathname(), 'r');
         if (false === $stream) {
@@ -90,36 +100,71 @@ final readonly class FileUploadProcessor implements ProcessorInterface
             'anonymous' => null === $owner,
         ]);
 
-        $file = new File();
-        $file->setName($uploadedFile->getClientOriginalName());
-        $file->setMimeType($mimeType);
-        $file->setType(FileType::fromMimeType($mimeType));
-        $file->setSize($uploadedFile->getSize());
-        $file->setStorageKey($storageKey);
-        $file->setDownloadToken($this->generateDownloadToken());
-        $file->setUploadDate(new \DateTimeImmutable());
-        $file->setExpirationDate(
-            (new \DateTimeImmutable())->modify(sprintf('+%d days', $data->expiresInDays ?? self::DEFAULT_EXPIRATION_IN_DAYS)),
-        );
-        // Null for an anonymous upload, see US07.
-        $file->setOwner($owner);
+        // Everything past the write has to undo it on the way out: the object
+        // exists in storage before any row references it, so a failure here
+        // would leave bytes nothing can ever reclaim, neither the history nor
+        // the expiry purge starting from it. This is what makes the "object
+        // written, metadata saved" transaction atomic, as the "Transit des
+        // fichiers" decision in tech_stack.md claims it is.
+        try {
+            $file = new File();
+            $file->setName($uploadedFile->getClientOriginalName());
+            $file->setMimeType($mimeType);
+            $file->setType(FileType::fromMimeType($mimeType));
+            $file->setSize($uploadedFile->getSize());
+            $file->setStorageKey($storageKey);
+            $file->setDownloadToken($this->generateDownloadToken());
+            $file->setUploadDate(new \DateTimeImmutable());
+            $file->setExpirationDate(
+                (new \DateTimeImmutable())->modify(sprintf('+%d days', $data->expiresInDays ?? self::DEFAULT_EXPIRATION_IN_DAYS)),
+            );
+            // Null for an anonymous upload, see US07.
+            $file->setOwner($owner);
 
-        if (null !== $data->password) {
-            $file->setPassword($this->passwordHasher->hash($data->password));
+            if (null !== $data->password) {
+                $file->setPassword($this->passwordHasher->hash($data->password));
+            }
+
+            if ([] !== $data->tags && null === $owner) {
+                // AuthenticatedOnly on FileUploadInput::$tags answers 422 long
+                // before this point; the guard only makes sure a tag is never
+                // silently dropped should that constraint ever be removed.
+                throw new \LogicException('Tags cannot be attached to an anonymous upload.');
+            }
+
+            foreach ($data->tags as $tagName) {
+                $file->addTag($this->tagResolver->resolve($owner, $tagName));
+            }
+
+            return $this->persistProcessor->process($file, $operation, $uriVariables, $context);
+        } catch (\Throwable $failure) {
+            $this->discardStoredObject($storageKey);
+
+            throw $failure;
         }
+    }
 
-        if ([] !== $data->tags && null === $owner) {
-            // AuthenticatedOnly on FileUploadInput::$tags answers 422 long
-            // before this point; the guard only makes sure a tag is never
-            // silently dropped should that constraint ever be removed.
-            throw new \LogicException('Tags cannot be attached to an anonymous upload.');
+    /**
+     * A failed cleanup must not replace the error that caused it: the caller
+     * needs to see why the upload failed, not why the tidying up did. The
+     * orphan is the lesser problem, and it is the one this method is already
+     * failing to solve.
+     */
+    private function discardStoredObject(string $storageKey): void
+    {
+        try {
+            $this->storage->delete($storageKey);
+        } catch (\Throwable $cleanupFailure) {
+            $this->logger->error('file.orphaned', [
+                'storage_key' => $storageKey,
+                'reason' => $cleanupFailure->getMessage(),
+            ]);
         }
+    }
 
-        foreach ($data->tags as $tagName) {
-            $file->addTag($this->tagResolver->resolve($owner, $tagName));
-        }
-
-        return $this->persistProcessor->process($file, $operation, $uriVariables, $context);
+    private function boundMimeType(string $mimeType): string
+    {
+        return mb_strlen($mimeType) > self::MAX_MIME_TYPE_LENGTH ? self::FALLBACK_MIME_TYPE : $mimeType;
     }
 
     private function generateStorageKey(string $extension): string

@@ -27,6 +27,11 @@ export const FORBIDDEN_EXTENSIONS = [
   'vbs',
 ]
 
+// File::$name est une colonne varchar(255) côté back, et MAX_FILE_NAME_LENGTH
+// de FileUploadInput la fait respecter. Sans ce garde-fou ici, l'envoi partait
+// et n'échouait qu'au retour, comme le faisait la taille avant le #79.
+export const MAX_FILE_NAME_LENGTH = 255
+
 export const DOWNLOAD_PASSWORD_MIN_LENGTH = 6
 
 // Même calcul que pathinfo(PATHINFO_EXTENSION) : ce qui suit le dernier point.
@@ -51,6 +56,10 @@ export const uploadSchema = z.object({
     // Assert\File refuse aussi un fichier vide.
     .refine((file) => file.size > 0, 'Ce fichier est vide.')
     .refine((file) => file.size <= MAX_FILE_SIZE, 'Le fichier ne peut pas dépasser 1 Go.')
+    .refine(
+      (file) => file.name.length <= MAX_FILE_NAME_LENGTH,
+      `Le nom du fichier ne peut pas dépasser ${MAX_FILE_NAME_LENGTH} caractères.`,
+    )
     .superRefine((file, context) => {
       const extension = fileExtension(file.name)
       if (FORBIDDEN_EXTENSIONS.includes(extension)) {

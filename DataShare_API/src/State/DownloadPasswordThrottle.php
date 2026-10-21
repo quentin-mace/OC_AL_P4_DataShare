@@ -38,6 +38,14 @@ final readonly class DownloadPasswordThrottle
         #[Autowire('%kernel.secret%')]
         private string $secret,
     ) {
+        // An HMAC without a key is still a deterministic digest: it works as a
+        // cache key, but anyone reading the storage could recompute it from a
+        // candidate token and learn which links were recently tried. APP_SECRET
+        // is empty in .env, set only in .env.dev and .env.test, so a deployment
+        // that forgets it would silently lose this protection rather than fail.
+        if ('' === $secret) {
+            throw new \LogicException('APP_SECRET must be set: the download password limiter keys its counters with it.');
+        }
     }
 
     /**
