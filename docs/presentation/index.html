@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataShare, support de soutenance</title>
+    <style>
+      /* Same tokens as the application (DataShare_Front/src/index.css), written
+         inline: the deck must open offline, by double-clicking the file, with no
+         build step and no dependency. */
+      :root {
+        --canvas: #fdf8f4;
+        --surface: #ffffff;
+        --ink: #2b2118;
+        --ink-muted: #6f6257;
+        --border: #ece1d6;
+        --accent: #f0803c;
+        --accent-soft: #ffefe4;
+        --accent-strong: #b8521a;
+        --code-bg: #f6efe8;
+
+        /* The stage is a fixed 16:9 canvas, scaled to the viewport by script.
+           Every size below is expressed against it, so a slide composed here
+           looks the same on a laptop and on a projector. */
+        --stage-w: 1280px;
+        --stage-h: 720px;
+        --scale: 1;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.5;
+        overflow: hidden;
+      }
+
+      #deck {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      #stage {
+        position: relative;
+        width: var(--stage-w);
+        height: var(--stage-h);
+        transform: scale(var(--scale));
+        transform-origin: center center;
+        background: var(--canvas);
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        padding: 64px 76px 72px;
+      }
+
+      .slide.is-active {
+        display: flex;
+        animation: fade 220ms ease-out;
+      }
+
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .slide.is-active {
+          animation: none;
+        }
+      }
+
+      /* Typography */
+
+      .kicker {
+        margin: 0 0 12px;
+        color: var(--accent-strong);
+        font-size: 16px;
+        font-weight: 650;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0 0 20px;
+        font-size: 72px;
+        font-weight: 680;
+        line-height: 1.05;
+      }
+
+      h2 {
+        margin: 0 0 26px;
+        font-size: 40px;
+        font-weight: 660;
+        line-height: 1.15;
+      }
+
+      h3 {
+        margin: 0 0 10px;
+        font-size: 21px;
+        font-weight: 650;
+      }
+
+      p {
+        margin: 0 0 16px;
+        font-size: 21px;
+      }
+
+      .lead {
+        font-size: 27px;
+        color: var(--ink-muted);
+        line-height: 1.4;
+      }
+
+      strong {
+        font-weight: 650;
+      }
+
+      /* Lists */
+
+      ul {
+        margin: 0 0 18px;
+        padding: 0;
+        list-style: none;
+      }
+
+      li {
+        position: relative;
+        margin-bottom: 12px;
+        padding-left: 26px;
+        font-size: 21px;
+      }
+
+      li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 12px;
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+        background: var(--accent);
+      }
+
+      li.step::before {
+        border-radius: 50%;
+        background: var(--ink-muted);
+      }
+
+      /* Blocks */
+
+      .cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+      }
+
+      .cols.wide-left {
+        grid-template-columns: 1.35fr 1fr;
+      }
+
+      .card {
+        padding: 22px 26px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+      }
+
+      .card p:last-child,
+      .card ul:last-child,
+      .card li:last-child {
+        margin-bottom: 0;
+      }
+
+      .card.accent {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      /* Lists inside a card are denser than lists on a bare slide: the card
+         already carries its own padding, and two columns of them must stay
+         clear of the footer. */
+      .card li {
+        margin-bottom: 10px;
+        font-size: 20px;
+      }
+
+      .card li::before {
+        top: 11px;
+      }
+
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 26px;
+      }
+
+      .tile {
+        padding: 18px 22px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+      }
+
+      .tile .figure {
+        display: block;
+        font-size: 38px;
+        font-weight: 680;
+        line-height: 1.1;
+        color: var(--accent-strong);
+      }
+
+      .tile .label {
+        display: block;
+        margin-top: 4px;
+        font-size: 17px;
+        color: var(--ink-muted);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 19px;
+      }
+
+      th,
+      td {
+        padding: 9px 14px;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+      }
+
+      th {
+        background: var(--accent-soft);
+        font-weight: 650;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      code {
+        /* Tight horizontal padding on purpose: a wider one leaves a visible gap
+           before the punctuation that follows an inline code span. */
+        padding: 0.1rem 0.22rem;
+        border-radius: 0.3rem;
+        background: var(--code-bg);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+        font-size: 0.9em;
+      }
+
+      pre {
+        margin: 0 0 18px;
+        padding: 14px 18px;
+        border-radius: 10px;
+        background: var(--ink);
+        color: #f6efe8;
+        font-size: 17px;
+        overflow-x: auto;
+      }
+
+      pre code {
+        padding: 0;
+        background: none;
+        color: inherit;
+        font-size: inherit;
+      }
+
+      .note {
+        margin-top: auto;
+        padding: 2px 0 0 16px;
+        border-left: 3px solid var(--accent);
+        color: var(--ink-muted);
+        font-size: 19px;
+      }
+
+      .note p {
+        margin: 0;
+        font-size: inherit;
+      }
+
+      figure {
+        margin: 0;
+        text-align: center;
+      }
+
+      figure img {
+        max-width: 100%;
+        max-height: 420px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+
+      figcaption {
+        margin-top: 10px;
+        font-size: 16px;
+        color: var(--ink-muted);
+      }
+
+      /* Title slide */
+
+      .slide.title {
+        justify-content: center;
+        background: var(--accent-soft);
+      }
+
+      .slide.title .rule {
+        width: 96px;
+        height: 6px;
+        margin: 0 0 32px;
+        border-radius: 3px;
+        background: var(--accent);
+      }
+
+      .slide.title .meta {
+        margin-top: 44px;
+        font-size: 19px;
+        color: var(--ink-muted);
+      }
+
+      .hint {
+        margin-top: 10px;
+        font-size: 17px;
+        color: var(--ink-muted);
+      }
+
+      /* Chrome: progress bar, footer, navigation buttons */
+
+      #chrome {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      #progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--border);
+      }
+
+      #progress span {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: var(--accent);
+        transition: width 220ms ease-out;
+      }
+
+      #footer {
+        position: absolute;
+        left: 76px;
+        right: 76px;
+        bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 15px;
+        color: var(--ink-muted);
+      }
+
+      #nav {
+        display: flex;
+        gap: 8px;
+        pointer-events: auto;
+      }
+
+      #nav button {
+        width: 30px;
+        height: 26px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--ink-muted);
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      #nav button:hover {
+        border-color: var(--accent);
+        color: var(--accent-strong);
+      }
+
+      /* Print: one slide per landscape page, so the deck can be exported to PDF
+         from the browser without a second tool. */
+      @page {
+        size: landscape;
+        margin: 0;
+      }
+
+      @media print {
+        body {
+          overflow: visible;
+        }
+
+        #deck {
+          position: static;
+          display: block;
+        }
+
+        #stage {
+          width: 100%;
+          height: auto;
+          transform: none;
+        }
+
+        .slide {
+          display: flex !important;
+          position: relative;
+          inset: auto;
+          height: 100vh;
+          animation: none;
+          break-after: page;
+        }
+
+        .slide:last-of-type {
+          break-after: auto;
+        }
+
+        #chrome {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="deck">
+      <div id="stage">
+        <section class="slide title">
+          <div class="rule"></div>
+          <h1>DataShare</h1>
+          <p class="lead">
+            Partage de fichiers par lien, avec expiration, tags et mot de passe optionnel.
+          </p>
+          <p class="meta">
+            Quentin Macé, parcours Architecte Logiciel, OpenClassrooms. Septembre et octobre 2026.
+          </p>
+          <p class="hint">
+            Flèches ou espace pour avancer, <code>f</code> pour le plein écran.
+          </p>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Le produit</p>
+          <h2>Deux parcours, les mêmes règles</h2>
+          <div class="cols">
+            <div class="card">
+              <h3>Sans compte</h3>
+              <ul>
+                <li>Dépose un fichier depuis l'accueil</li>
+                <li>Obtient un lien de téléchargement</li>
+                <li>Ni historique, ni reprise, ni suppression</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Avec un compte</h3>
+              <ul>
+                <li>Retrouve ses envois dans un historique</li>
+                <li>Organise par tags et filtre</li>
+                <li>Supprime ses fichiers avant leur terme</li>
+              </ul>
+            </div>
+          </div>
+          <p style="margin-top: 26px">
+            <strong>Règles communes aux deux</strong> : 1 Go au maximum, durée de vie de 1 à 7 jours,
+            mot de passe de partage facultatif, douze extensions refusées.
+          </p>
+          <div class="note">
+            <p>Dix user stories, de l'inscription à la purge automatique des fichiers expirés.</p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Architecture</p>
+          <h2>Trois briques, et un transit asymétrique</h2>
+          <div class="cols wide-left">
+            <figure>
+              <img
+                src="../architectureDecisions/diagrams/architectureDiagram.png"
+                alt="Le front React appelle l'API Symfony, qui écrit dans le stockage objet S3 et dans PostgreSQL. Le téléchargement part en direct du stockage par une URL présignée."
+              />
+            </figure>
+            <div>
+              <ul>
+                <li>Front React, servi en statique, qui ne parle qu'à l'API</li>
+                <li>API Symfony et API Platform, seule autorité sur les droits</li>
+                <li>PostgreSQL pour les métadonnées, stockage objet S3 pour les octets</li>
+                <li>Tout tourne dans Docker, y compris le serveur de développement du front</li>
+              </ul>
+            </div>
+          </div>
+          <div class="note">
+            <p>
+              La flèche de gauche est la décision qui structure tout le reste : le fichier
+              téléchargé ne traverse jamais l'application.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Choix techniques</p>
+          <h2>Où vivent les octets, et par où ils transitent</h2>
+          <div class="cols">
+            <div class="card">
+              <h3>Upload par l'API</h3>
+              <p>
+                La transaction "objet écrit, métadonnées enregistrées" reste atomique. Une URL
+                présignée en écriture aurait créé le cas "dépôt réussi, confirmation perdue", donc
+                des objets orphelins à réconcilier.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Téléchargement par URL présignée</h3>
+              <p>
+                L'API vérifie l'expiration et le mot de passe, puis signe une URL valable 60
+                secondes. Le contrôle d'accès reste côté serveur, et PHP ne streame jamais 1 Go en
+                sortie.
+              </p>
+            </div>
+          </div>
+          <div class="note">
+            <p>
+              Effet de bord utile : l'upload devient le seul endroit du service où la taille des
+              fichiers pèse sur le code, donc le seul qui méritait un test de charge.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Choix techniques</p>
+          <h2>Le critère d'arbitrage, posé une fois</h2>
+          <div class="card accent" style="margin-bottom: 24px">
+            <p style="margin: 0">
+              Sur 28 tickets, 13 relèvent de la documentation, du suivi qualité et des tests. Le
+              critère retenu est donc <strong>la maîtrise préalable du stack</strong>, pas l'intérêt
+              technique des options : tout temps d'apprentissage est pris sur les livrables.
+            </p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Brique</th>
+                <th>Choix</th>
+                <th>Alternative écartée</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Back</td>
+                <td>Symfony 8 et API Platform</td>
+                <td>NestJS, meilleur sur le 1 Go, coût d'apprentissage non finançable</td>
+              </tr>
+              <tr>
+                <td>Front</td>
+                <td>React 19, Vite, TypeScript</td>
+                <td>Angular, plus de garde-fous, plus lent à démarrer</td>
+              </tr>
+              <tr>
+                <td>Base</td>
+                <td>PostgreSQL 16</td>
+                <td>MongoDB, défendable, sans bénéfice sur un modèle relationnel</td>
+              </tr>
+              <tr>
+                <td>Stockage</td>
+                <td>API S3, via Flysystem</td>
+                <td>AWS S3 réel, carte bancaire exigée, scripts de déploiement cassés</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="note">
+            <p>
+              Le stockage est choisi comme une interface, pas comme un produit. La slide 7 montre ce
+              que cette nuance a sauvé.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Choix techniques</p>
+          <h2>Le front, arrêté d'avance plutôt qu'au fil de l'eau</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Besoin</th>
+                <th>Choix</th>
+                <th>Pourquoi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Appels HTTP</td>
+                <td>axios</td>
+                <td>intercepteurs JWT et suivi de progression d'upload</td>
+              </tr>
+              <tr>
+                <td>Formulaires</td>
+                <td>react-hook-form et zod</td>
+                <td>les règles des specs deviennent déclaratives et testables</td>
+              </tr>
+              <tr>
+                <td>Styles</td>
+                <td>Tailwind CSS</td>
+                <td>maquettes desktop et mobile, le responsive tient dans un préfixe</td>
+              </tr>
+              <tr>
+                <td>État global</td>
+                <td>zustand</td>
+                <td>partager la session sans prop drilling ni Context verbeux</td>
+              </tr>
+              <tr>
+                <td>État serveur</td>
+                <td>aucune bibliothèque</td>
+                <td>un seul écran concerné, TanStack Query serait surdimensionné</td>
+              </tr>
+              <tr>
+                <td>Lint</td>
+                <td>oxlint et Prettier</td>
+                <td>fourni par le template Vite, règles React et accessibilité incluses</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="note">
+            <p>
+              Le JWT vit dans le <code>localStorage</code>, et le front lit sa date d'expiration pour
+              ne jamais envoyer un jeton périmé. Le risque XSS est assumé, et le rapport de sécurité
+              le dit.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Difficulté</p>
+          <h2>Le stockage disparaît des registres</h2>
+          <p>
+            La CI casse un matin, sur un ticket qui ne touchait pas à l'infrastructure. Dernier build
+            vert le 23 septembre, premier échec le 28.
+          </p>
+          <pre><code>minio Error unauthorized: access to the requested resource is not authorized</code></pre>
+          <div class="cols">
+            <div class="card">
+              <h3>Le diagnostic</h3>
+              <p>
+                401 sur Quay et Docker Hub, 403 sur GHCR, avec des témoins de contrôle à 200 sur les
+                trois. Ni quota, ni tag erroné : les dépôts sont fermés. L'édition communautaire de
+                MinIO a été abandonnée par son éditeur.
+              </p>
+            </div>
+            <div class="card">
+              <h3>La solution</h3>
+              <p>
+                SeaweedFS, retenu sur essai et non sur documentation : créer un bucket, envoyer un
+                objet, signer une URL, appeler cette URL. Le seul des quatre candidats à avoir servi
+                les quatre étapes.
+              </p>
+            </div>
+          </div>
+          <div class="note">
+            <p>
+              <strong>Zéro ligne de code applicatif modifiée.</strong> Le <code>compose.yaml</code>
+              et deux variables d'environnement. C'est la promesse du choix de stockage, mise à
+              l'épreuve pour de vrai.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Difficulté</p>
+          <h2>Un secret de six caractères ne vaut que par la lenteur imposée</h2>
+          <ul>
+            <li class="step">
+              <strong>Le problème</strong> : la spécification impose six caractères pour le mot de
+              passe d'un lien. Rien n'empêchait de les deviner en les soumettant en boucle.
+            </li>
+            <li class="step">
+              <strong>La décision</strong> : cinq échecs par lien et par quart d'heure, et non par
+              couple lien plus adresse IP comme le fait la connexion. Une rotation d'adresses ne
+              coûte presque rien, le secret attaqué appartient au lien, c'est donc le lien qui
+              compte. Un second compteur, cinq fois plus large, s'applique par adresse.
+            </li>
+            <li class="step">
+              <strong>L'ordre compte</strong> : la limite est constatée avant la comparaison, et
+              seuls les échecs la font avancer. Un bon mot de passe ne consomme rien et remet le
+              compteur du lien à zéro.
+            </li>
+          </ul>
+          <div class="note">
+            <p>
+              Le piège, gardé par un test unitaire dédié : <code>consume(0)</code> renvoie
+              <strong>toujours</strong> un résultat accepté, même sans jeton restant. Sans lire aussi
+              le nombre de jetons, la limite laisse passer une tentative de trop, en silence.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Difficulté</p>
+          <h2>Un 404 qui ne parlait pas de ce qu'on demandait</h2>
+          <p>
+            Sur <code>/api/files/3/tags/facture</code>, le provider Doctrine par défaut lit les
+            variables d'URI <strong>par décalage et non par nom</strong>. Le lien portant
+            <code>id</code> reçoit la valeur <code>facture</code>, que le transformateur d'entiers
+            convertit en zéro.
+          </p>
+          <div class="cols">
+            <div class="card">
+              <h3>Ce qu'on voyait</h3>
+              <p>
+                Une requête partie chercher le fichier d'identifiant zéro, sans la moindre erreur, et
+                un 404 pour une raison sans rapport avec la demande. En <code>POST</code>, pire :
+                l'objet nul atteignait l'expression de sécurité, donc un 500 au lieu du 404 annoncé.
+              </p>
+            </div>
+            <div class="card">
+              <h3>La solution</h3>
+              <p>
+                Un provider maison partagé par les trois opérations. Quinze lignes, et le nom du tag
+                reste intact dans les variables d'URI que reçoit le processeur, ce qui était tout
+                l'intérêt de le nommer dans l'URL.
+              </p>
+            </div>
+          </div>
+          <div class="note">
+            <p>
+              Le 404 "ce tag n'est pas sur ce fichier" reste, lui, dans les processeurs : levé dans
+              le provider, il s'exécuterait avant le contrôle de propriété et permettrait de sonder
+              les tags des fichiers des autres.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Difficulté</p>
+          <h2>La route que sa propre documentation ne pouvait pas appeler</h2>
+          <ul>
+            <li class="step">
+              <strong>Le symptôme</strong> : essayée depuis Swagger UI, la création de tags à
+              l'envoi répondait 400 quoi qu'on saisisse.
+            </li>
+            <li class="step">
+              <strong>La cause</strong> : PHP ne construit un tableau depuis un formulaire que si le
+              champ s'appelle littéralement <code>tags[]</code>. Un champ répété est écrasé, et
+              Swagger UI ne le répète même pas, il joint les valeurs par des virgules. La seule forme
+              acceptée était précisément celle qu'aucun formulaire ordinaire ne produit.
+            </li>
+            <li class="step">
+              <strong>La solution</strong> : découper sur la virgule dans le décodeur multipart,
+              espaces de bordure compris. Une ligne, et les deux formes d'envoi atteignent le
+              contrôle de doublon à l'identique.
+            </li>
+          </ul>
+          <div class="note">
+            <p>
+              Contrepartie assumée : un nom de tag ne peut plus contenir de virgule. C'est la
+              restriction qu'imposent la plupart des systèmes de tags, pour cette raison exacte.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Difficulté</p>
+          <h2>Le gigaoctet n'avait pas la même taille des deux côtés</h2>
+          <div class="tiles">
+            <div class="tile">
+              <span class="figure">1024³</span>
+              <span class="label">ce que comptait le front</span>
+            </div>
+            <div class="tile">
+              <span class="figure">1000³</span>
+              <span class="label">ce que compte l'API, suffixes Symfony</span>
+            </div>
+            <div class="tile">
+              <span class="figure">73 Mo</span>
+              <span class="label">d'écart, donc d'envois acceptés puis refusés</span>
+            </div>
+          </div>
+          <p>
+            L'utilisateur voyait sa sélection validée par le formulaire, attendait une minute, et
+            récoltait un 422. C'est le seul vrai bug qu'a trouvé la campagne de performance, et
+            aucun test ne pouvait le voir : chacun des deux côtés était cohérent avec lui-même.
+          </p>
+          <div class="note">
+            <p>
+              Leçon tirée et écrite : une constante dupliquée des deux côtés finit par diverger. La
+              liste des extensions interdites l'est aussi, le fait est consigné dans
+              <code>SECURITY.md</code> avec l'autorité qui tranche, le back.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Qualité</p>
+          <h2>Trois niveaux de tests, trois questions différentes</h2>
+          <div class="tiles">
+            <div class="tile">
+              <span class="figure">197</span>
+              <span class="label">tests back, 90,56 % des lignes</span>
+            </div>
+            <div class="tile">
+              <span class="figure">294</span>
+              <span class="label">tests front, 99,27 % des lignes</span>
+            </div>
+            <div class="tile">
+              <span class="figure">7</span>
+              <span class="label">scénarios de bout en bout</span>
+            </div>
+          </div>
+          <ul>
+            <li><strong>Unitaire</strong> : qui a le droit, quoi hacher, quoi refuser.</li>
+            <li>
+              <strong>Fonctionnel</strong> : une vraie requête HTTP sur le noyau, donc le routeur, le
+              pare-feu, le sérialiseur et le validateur. C'est ce qui attrape un groupe de
+              sérialisation oublié.
+            </li>
+            <li>
+              <strong>Bout en bout</strong> : un navigateur sur la stack complète, et la seule
+              question que les deux autres ne posent jamais, est-ce que ça marche vraiment.
+            </li>
+          </ul>
+          <div class="note">
+            <p>
+              Trois workflows rejouent tout sur chaque pull request. Limite assumée : le seuil de
+              70 % est bloquant côté front, mesuré mais pas vérifié côté back.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Qualité</p>
+          <h2>Les mesures, et les limites assumées</h2>
+          <div class="cols">
+            <div class="card">
+              <h3>Les mesures</h3>
+              <ul>
+                <li>JWT signé RSA, sans session serveur, valable une heure</li>
+                <li>Sécurité posée opération par opération, certaines routes étant publiques par conception</li>
+                <li>401 et 410 indifférenciés, pour n'apprendre rien à qui tâtonne</li>
+                <li>16 caractères pour un compte, 6 pour un lien, deux hachages distincts</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Les audits</h3>
+              <ul>
+                <li>
+                  <code>composer audit</code> : deux avis Symfony, corrigés dans la revue, dont une
+                  ReDoS atteignable par n'importe quel client
+                </li>
+                <li><code>npm audit</code> : aucune vulnérabilité, front et e2e</li>
+                <li>Trivy sur les huit images de la stack, analysées une par une</li>
+              </ul>
+            </div>
+          </div>
+          <div class="note">
+            <p>
+              Première limite à corriger, et elle est écrite noir sur blanc : l'upload anonyme n'est
+              plafonné par rien.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Qualité</p>
+          <h2>La mesure a contredit la lecture naïve</h2>
+          <div class="tiles">
+            <div class="tile">
+              <span class="figure">63 s</span>
+              <span class="label">pour 1 Go, aucune limite serveur atteinte</span>
+            </div>
+            <div class="tile">
+              <span class="figure">237,7 Kio</span>
+              <span class="label">transférés sur l'accueil, budget de 300</span>
+            </div>
+            <div class="tile">
+              <span class="figure">96 %</span>
+              <span class="label">du budget consommé par le seul poste script</span>
+            </div>
+          </div>
+          <p>
+            Le débit d'écriture chutait d'un facteur six entre 100 et 500 Mo, puis remontait à 1 Go.
+            Incohérent, si on lit la taille. Mais la taille n'est pas la seule variable qui change
+            d'un palier à l'autre : <strong>c'est la concurrence</strong>. À 500 Mo, un envoi seul
+            écrit à 159,9 Mio/s, deux envois simultanés à 18 Mio/s agrégés.
+          </p>
+          <div class="note">
+            <p>
+              L'explication tient au chemin d'un octet : il est écrit trois fois sur le même disque,
+              tampon de nginx, fichier temporaire de PHP, puis stockage objet.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">L'IA dans le projet</p>
+          <h2>Trois rôles distincts, un seul décideur</h2>
+          <div class="cols">
+            <div class="card">
+              <h3>Ce qui a été confié</h3>
+              <ul>
+                <li>Contradicteur sur le socle technique et les décisions d'architecture</li>
+                <li>Développeur junior à qui l'on assigne des tickets, un par un</li>
+                <li>Relecteur, à la recherche des failles et des manques de la documentation</li>
+              </ul>
+            </div>
+            <div class="card accent">
+              <h3>La règle sans exception</h3>
+              <p>
+                L'IA créait la branche et la demande de fusion. Elle n'a <strong>jamais</strong> été
+                autorisée à fusionner. Chaque fusion est humaine, après relecture ligne à ligne, test
+                manuel et intégration continue au vert.
+              </p>
+            </div>
+          </div>
+          <div class="note">
+            <p>
+              Limites reconnues : un apprentissage moins profond qu'en écrivant soi-même, et une
+              quantité de code produite qui crée une surcharge cognitive. C'est précisément ce que la
+              relecture obligatoire sert à contenir, sans jamais le supprimer.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Suites</p>
+          <h2>Ce qui est identifié, chiffré et prêt à être repris</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Sujet</th>
+                <th>Ce que ça apporte</th>
+                <th>Ce que ça coûte</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Upload par URL présignée</td>
+                <td>deux copies d'octets sur trois supprimées</td>
+                <td>la transaction cesse d'être atomique, réconciliation à écrire</td>
+              </tr>
+              <tr>
+                <td>Limite de débit sur l'upload anonyme</td>
+                <td>le stockage n'est plus remplissable librement</td>
+                <td>le limiteur est déjà en place pour le téléchargement</td>
+              </tr>
+              <tr>
+                <td>Compteurs dans Redis</td>
+                <td>les limites survivent à la réplication</td>
+                <td>de la configuration, pas de code</td>
+              </tr>
+              <tr>
+                <td>Découpage du bundle front</td>
+                <td>de la marge sur le poste déjà saturé</td>
+                <td><code>React.lazy</code> sur les routes de l'espace connecté</td>
+              </tr>
+              <tr>
+                <td>Contraste des jetons orangés</td>
+                <td>le niveau WCAG AA sur deux éléments de formulaire</td>
+                <td>deux valeurs de couleur</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="note">
+            <p>
+              Rien de ce qui est annoncé ici n'est de mémoire : tout est tracé dans le dépôt, dans
+              les décisions d'architecture et dans les quatre documents de suivi, plan de tests,
+              sécurité, performance et maintenance.
+            </p>
+          </div>
+        </section>
+
+        <div id="chrome">
+          <div id="progress"><span></span></div>
+          <div id="footer">
+            <div id="nav">
+              <button type="button" data-step="-1" aria-label="Slide précédente">&#8592;</button>
+              <button type="button" data-step="1" aria-label="Slide suivante">&#8594;</button>
+            </div>
+            <span id="counter"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const stage = document.getElementById('stage')
+      const slides = Array.from(document.querySelectorAll('.slide'))
+      const counter = document.getElementById('counter')
+      const bar = document.querySelector('#progress span')
+
+      let index = 0
+
+      // The stage keeps its 1280 by 720 pixels whatever the screen; only the
+      // scale factor changes, so nothing ever reflows between two displays.
+      function fit() {
+        const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720)
+        stage.style.setProperty('--scale', scale)
+      }
+
+      function show(next) {
+        index = Math.max(0, Math.min(slides.length - 1, next))
+        slides.forEach((slide, position) => slide.classList.toggle('is-active', position === index))
+        counter.textContent = index + 1 + ' / ' + slides.length
+        bar.style.width = ((index + 1) / slides.length) * 100 + '%'
+        // replaceState rather than assigning location.hash: the slide number
+        // survives a reload without filling the browser history.
+        history.replaceState(null, '', '#' + (index + 1))
+      }
+
+      function fromHash() {
+        const asked = parseInt(window.location.hash.slice(1), 10)
+        return Number.isNaN(asked) ? 0 : asked - 1
+      }
+
+      document.addEventListener('keydown', (event) => {
+        const keys = [
+          'ArrowRight',
+          'ArrowLeft',
+          'ArrowUp',
+          'ArrowDown',
+          ' ',
+          'PageDown',
+          'PageUp',
+          'Home',
+          'End',
+        ]
+
+        if (keys.includes(event.key)) {
+          event.preventDefault()
+        }
+
+        switch (event.key) {
+          case 'ArrowRight':
+          case 'ArrowDown':
+          case 'PageDown':
+          case ' ':
+            show(index + 1)
+            break
+          case 'ArrowLeft':
+          case 'ArrowUp':
+          case 'PageUp':
+            show(index - 1)
+            break
+          case 'Home':
+            show(0)
+            break
+          case 'End':
+            show(slides.length - 1)
+            break
+          case 'f':
+          case 'F':
+            if (document.fullscreenElement) {
+              document.exitFullscreen()
+            } else {
+              document.documentElement.requestFullscreen()
+            }
+            break
+        }
+      })
+
+      document.querySelectorAll('#nav button').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.stopPropagation()
+          show(index + Number(button.dataset.step))
+        })
+      })
+
+      // Clicking anywhere advances, which is what a remote control sends. Links
+      // keep their own behaviour.
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('a')) {
+          show(index + 1)
+        }
+      })
+
+      window.addEventListener('resize', fit)
+
+      fit()
+      show(fromHash())
+    </script>
+  </body>
+</html>
