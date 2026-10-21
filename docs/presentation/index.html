@@ -553,9 +553,9 @@
           <h2>Le critère d'arbitrage, posé une fois</h2>
           <div class="card accent" style="margin-bottom: 24px">
             <p style="margin: 0">
-              Sur 28 tickets, 13 relèvent de la documentation, du suivi qualité et des tests. Le
-              critère retenu est donc <strong>la maîtrise préalable du stack</strong>, pas l'intérêt
-              technique des options : tout temps d'apprentissage est pris sur les livrables.
+              Le critère retenu est <strong>la maîtrise préalable du stack</strong>, pas l'intérêt
+              technique des options. La moitié de la charge du projet est de la documentation, du
+              suivi qualité et des tests : tout temps d'apprentissage y est pris.
             </p>
           </div>
           <table>
@@ -591,61 +591,8 @@
           </table>
           <div class="note">
             <p>
-              Le stockage est choisi comme une interface, pas comme un produit. La slide 7 montre ce
-              que cette nuance a sauvé.
-            </p>
-          </div>
-        </section>
-
-        <section class="slide">
-          <p class="kicker">Choix techniques</p>
-          <h2>Le front, arrêté d'avance plutôt qu'au fil de l'eau</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Besoin</th>
-                <th>Choix</th>
-                <th>Pourquoi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Appels HTTP</td>
-                <td>axios</td>
-                <td>intercepteurs JWT et suivi de progression d'upload</td>
-              </tr>
-              <tr>
-                <td>Formulaires</td>
-                <td>react-hook-form et zod</td>
-                <td>les règles des specs deviennent déclaratives et testables</td>
-              </tr>
-              <tr>
-                <td>Styles</td>
-                <td>Tailwind CSS</td>
-                <td>maquettes desktop et mobile, le responsive tient dans un préfixe</td>
-              </tr>
-              <tr>
-                <td>État global</td>
-                <td>zustand</td>
-                <td>partager la session sans prop drilling ni Context verbeux</td>
-              </tr>
-              <tr>
-                <td>État serveur</td>
-                <td>aucune bibliothèque</td>
-                <td>un seul écran concerné, TanStack Query serait surdimensionné</td>
-              </tr>
-              <tr>
-                <td>Lint</td>
-                <td>oxlint et Prettier</td>
-                <td>fourni par le template Vite, règles React et accessibilité incluses</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="note">
-            <p>
-              Le JWT vit dans le <code>localStorage</code>, et le front lit sa date d'expiration pour
-              ne jamais envoyer un jeton périmé. Le risque XSS est assumé, et le rapport de sécurité
-              le dit.
+              Le stockage est choisi comme une interface, pas comme un produit. La slide suivante
+              montre ce que cette nuance a sauvé.
             </p>
           </div>
         </section>
@@ -654,8 +601,8 @@
           <p class="kicker">Difficulté</p>
           <h2>Le stockage disparaît des registres</h2>
           <p>
-            La CI casse un matin, sur un ticket qui ne touchait pas à l'infrastructure. Dernier build
-            vert le 23 septembre, premier échec le 28.
+            L'intégration continue casse un matin, sur une branche qui ne touchait pas à
+            l'infrastructure.
           </p>
           <pre><code>minio Error unauthorized: access to the requested resource is not authorized</code></pre>
           <div class="cols">
@@ -687,99 +634,6 @@
 
         <section class="slide">
           <p class="kicker">Difficulté</p>
-          <h2>Un secret de six caractères ne vaut que par la lenteur imposée</h2>
-          <ul>
-            <li class="step">
-              <strong>Le problème</strong> : la spécification impose six caractères pour le mot de
-              passe d'un lien. Rien n'empêchait de les deviner en les soumettant en boucle.
-            </li>
-            <li class="step">
-              <strong>La décision</strong> : cinq échecs par lien et par quart d'heure, et non par
-              couple lien plus adresse IP comme le fait la connexion. Une rotation d'adresses ne
-              coûte presque rien, le secret attaqué appartient au lien, c'est donc le lien qui
-              compte. Un second compteur, cinq fois plus large, s'applique par adresse.
-            </li>
-            <li class="step">
-              <strong>L'ordre compte</strong> : la limite est constatée avant la comparaison, et
-              seuls les échecs la font avancer. Un bon mot de passe ne consomme rien et remet le
-              compteur du lien à zéro.
-            </li>
-          </ul>
-          <div class="note">
-            <p>
-              Le piège, gardé par un test unitaire dédié : <code>consume(0)</code> renvoie
-              <strong>toujours</strong> un résultat accepté, même sans jeton restant. Sans lire aussi
-              le nombre de jetons, la limite laisse passer une tentative de trop, en silence.
-            </p>
-          </div>
-        </section>
-
-        <section class="slide">
-          <p class="kicker">Difficulté</p>
-          <h2>Un 404 qui ne parlait pas de ce qu'on demandait</h2>
-          <p>
-            Sur <code>/api/files/3/tags/facture</code>, le provider Doctrine par défaut lit les
-            variables d'URI <strong>par décalage et non par nom</strong>. Le lien portant
-            <code>id</code> reçoit la valeur <code>facture</code>, que le transformateur d'entiers
-            convertit en zéro.
-          </p>
-          <div class="cols">
-            <div class="card">
-              <h3>Ce qu'on voyait</h3>
-              <p>
-                Une requête partie chercher le fichier d'identifiant zéro, sans la moindre erreur, et
-                un 404 pour une raison sans rapport avec la demande. En <code>POST</code>, pire :
-                l'objet nul atteignait l'expression de sécurité, donc un 500 au lieu du 404 annoncé.
-              </p>
-            </div>
-            <div class="card">
-              <h3>La solution</h3>
-              <p>
-                Un provider maison partagé par les trois opérations. Quinze lignes, et le nom du tag
-                reste intact dans les variables d'URI que reçoit le processeur, ce qui était tout
-                l'intérêt de le nommer dans l'URL.
-              </p>
-            </div>
-          </div>
-          <div class="note">
-            <p>
-              Le 404 "ce tag n'est pas sur ce fichier" reste, lui, dans les processeurs : levé dans
-              le provider, il s'exécuterait avant le contrôle de propriété et permettrait de sonder
-              les tags des fichiers des autres.
-            </p>
-          </div>
-        </section>
-
-        <section class="slide">
-          <p class="kicker">Difficulté</p>
-          <h2>La route que sa propre documentation ne pouvait pas appeler</h2>
-          <ul>
-            <li class="step">
-              <strong>Le symptôme</strong> : essayée depuis Swagger UI, la création de tags à
-              l'envoi répondait 400 quoi qu'on saisisse.
-            </li>
-            <li class="step">
-              <strong>La cause</strong> : PHP ne construit un tableau depuis un formulaire que si le
-              champ s'appelle littéralement <code>tags[]</code>. Un champ répété est écrasé, et
-              Swagger UI ne le répète même pas, il joint les valeurs par des virgules. La seule forme
-              acceptée était précisément celle qu'aucun formulaire ordinaire ne produit.
-            </li>
-            <li class="step">
-              <strong>La solution</strong> : découper sur la virgule dans le décodeur multipart,
-              espaces de bordure compris. Une ligne, et les deux formes d'envoi atteignent le
-              contrôle de doublon à l'identique.
-            </li>
-          </ul>
-          <div class="note">
-            <p>
-              Contrepartie assumée : un nom de tag ne peut plus contenir de virgule. C'est la
-              restriction qu'imposent la plupart des systèmes de tags, pour cette raison exacte.
-            </p>
-          </div>
-        </section>
-
-        <section class="slide">
-          <p class="kicker">Difficulté</p>
           <h2>Le gigaoctet n'avait pas la même taille des deux côtés</h2>
           <div class="tiles">
             <div class="tile">
@@ -788,7 +642,7 @@
             </div>
             <div class="tile">
               <span class="figure">1000³</span>
-              <span class="label">ce que compte l'API, suffixes Symfony</span>
+              <span class="label">ce que comptait l'API</span>
             </div>
             <div class="tile">
               <span class="figure">73 Mo</span>
@@ -797,14 +651,13 @@
           </div>
           <p>
             L'utilisateur voyait sa sélection validée par le formulaire, attendait une minute, et
-            récoltait un 422. C'est le seul vrai bug qu'a trouvé la campagne de performance, et
-            aucun test ne pouvait le voir : chacun des deux côtés était cohérent avec lui-même.
+            récoltait un refus. Aucun test ne pouvait le voir : chacun des deux côtés était
+            cohérent avec lui-même.
           </p>
           <div class="note">
             <p>
-              Leçon tirée et écrite : une constante dupliquée des deux côtés finit par diverger. La
-              liste des extensions interdites l'est aussi, le fait est consigné dans
-              <code>SECURITY.md</code> avec l'autorité qui tranche, le back.
+              Leçon tirée et écrite : une constante dupliquée des deux côtés finit par diverger.
+              C'est la campagne de performance qui l'a trouvée, pas les tests.
             </p>
           </div>
         </section>
@@ -830,8 +683,7 @@
             <li><strong>Unitaire</strong> : qui a le droit, quoi hacher, quoi refuser.</li>
             <li>
               <strong>Fonctionnel</strong> : une vraie requête HTTP sur le noyau, donc le routeur, le
-              pare-feu, le sérialiseur et le validateur. C'est ce qui attrape un groupe de
-              sérialisation oublié.
+              pare-feu, le sérialiseur et le validateur.
             </li>
             <li>
               <strong>Bout en bout</strong> : un navigateur sur la stack complète, et la seule
@@ -856,7 +708,7 @@
                 <li>JWT signé RSA, sans session serveur, valable une heure</li>
                 <li>Sécurité posée opération par opération, certaines routes étant publiques par conception</li>
                 <li>401 et 410 indifférenciés, pour n'apprendre rien à qui tâtonne</li>
-                <li>16 caractères pour un compte, 6 pour un lien, deux hachages distincts</li>
+                <li>16 caractères pour un compte, 6 pour un lien, et cinq essais par quart d'heure pour compenser</li>
               </ul>
             </div>
             <div class="card">
@@ -934,8 +786,7 @@
           <div class="note">
             <p>
               Limites reconnues : un apprentissage moins profond qu'en écrivant soi-même, et une
-              quantité de code produite qui crée une surcharge cognitive. C'est précisément ce que la
-              relecture obligatoire sert à contenir, sans jamais le supprimer.
+              quantité de code produite qui crée une surcharge cognitive.
             </p>
           </div>
         </section>
@@ -963,11 +814,6 @@
                 <td>le limiteur est déjà en place pour le téléchargement</td>
               </tr>
               <tr>
-                <td>Compteurs dans Redis</td>
-                <td>les limites survivent à la réplication</td>
-                <td>de la configuration, pas de code</td>
-              </tr>
-              <tr>
                 <td>Découpage du bundle front</td>
                 <td>de la marge sur le poste déjà saturé</td>
                 <td><code>React.lazy</code> sur les routes de l'espace connecté</td>
@@ -982,8 +828,7 @@
           <div class="note">
             <p>
               Rien de ce qui est annoncé ici n'est de mémoire : tout est tracé dans le dépôt, dans
-              les décisions d'architecture et dans les quatre documents de suivi, plan de tests,
-              sécurité, performance et maintenance.
+              les décisions d'architecture et dans les quatre documents de suivi.
             </p>
           </div>
         </section>
