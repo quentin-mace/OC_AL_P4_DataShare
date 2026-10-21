@@ -90,5 +90,6 @@ Ce qui vous est propre va dans un fichier `.env.local` à côté, jamais commit�
 | [Guide de l'interface](docs/ui_guide.md) | écrire un écran du front sans réinventer un composant |
 | [Contrat d'API](docs/specs/API/contrat-api.md) | les routes, les champs et les codes d'erreur |
 | [Décisions d'architecture](docs/architectureDecisions/) | pourquoi le projet est fait comme ça |
+| [Support de soutenance](docs/presentation/index.html) | le projet en dix-sept slides, à ouvrir dans un navigateur |
 
 Ce README existe aussi en [version HTML](docs/html/index.html), plus agréable à lire hors de GitHub.

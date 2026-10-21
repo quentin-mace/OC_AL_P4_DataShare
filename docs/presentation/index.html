@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataShare, support de soutenance</title>
+    <style>
+      /* Same tokens as the application (DataShare_Front/src/index.css), written
+         inline: the deck must open offline, by double-clicking the file, with no
+         build step and no dependency. */
+      :root {
+        --canvas: #fdf8f4;
+        --surface: #ffffff;
+        --ink: #2b2118;
+        --ink-muted: #6f6257;
+        --border: #ece1d6;
+        --accent: #f0803c;
+        --accent-soft: #ffefe4;
+        --accent-strong: #b8521a;
+        --code-bg: #f6efe8;
+
+        /* The stage is a fixed 16:9 canvas, scaled to the viewport by script.
+           Every size below is expressed against it, so a slide composed here
+           looks the same on a laptop and on a projector. */
+        --stage-w: 1280px;
+        --stage-h: 720px;
+        --scale: 1;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.5;
+        overflow: hidden;
+      }
+
+      #deck {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      #stage {
+        position: relative;
+        width: var(--stage-w);
+        height: var(--stage-h);
+        transform: scale(var(--scale));
+        transform-origin: center center;
+        background: var(--canvas);
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        padding: 64px 76px 72px;
+      }
+
+      .slide.is-active {
+        display: flex;
+        animation: fade 220ms ease-out;
+      }
+
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .slide.is-active {
+          animation: none;
+        }
+      }
+
+      /* Typography */
+
+      .kicker {
+        margin: 0 0 12px;
+        color: var(--accent-strong);
+        font-size: 16px;
+        font-weight: 650;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0 0 20px;
+        font-size: 72px;
+        font-weight: 680;
+        line-height: 1.05;
+      }
+
+      h2 {
+        margin: 0 0 26px;
+        font-size: 40px;
+        font-weight: 660;
+        line-height: 1.15;
+      }
+
+      h3 {
+        margin: 0 0 10px;
+        font-size: 21px;
+        font-weight: 650;
+      }
+
+      p {
+        margin: 0 0 16px;
+        font-size: 21px;
+      }
+
+      .lead {
+        font-size: 27px;
+        color: var(--ink-muted);
+        line-height: 1.4;
+      }
+
+      strong {
+        font-weight: 650;
+      }
+
+      /* Lists */
+
+      ul {
+        margin: 0 0 18px;
+        padding: 0;
+        list-style: none;
+      }
+
+      li {
+        position: relative;
+        margin-bottom: 12px;
+        padding-left: 26px;
+        font-size: 21px;
+      }
+
+      li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 12px;
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+        background: var(--accent);
+      }
+
+      li.step::before {
+        border-radius: 50%;
+        background: var(--ink-muted);
+      }
+
+      /* Blocks */
+
+      .cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+      }
+
+      .cols.wide-left {
+        grid-template-columns: 1.35fr 1fr;
+      }
+
+      .card {
+        padding: 22px 26px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+      }
+
+      .card p:last-child,
+      .card ul:last-child,
+      .card li:last-child {
+        margin-bottom: 0;
+      }
+
+      .card.accent {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      /* Lists inside a card are denser than lists on a bare slide: the card
+         already carries its own padding, and two columns of them must stay
+         clear of the footer. */
+      .card li {
+        margin-bottom: 10px;
+        font-size: 20px;
+      }
+
+      .card li::before {
+        top: 11px;
+      }
+
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 26px;
+      }
+
+      .tile {
+        padding: 18px 22px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+      }
+
+      .tile .figure {
+        display: block;
+        font-size: 38px;
+        font-weight: 680;
+        line-height: 1.1;
+        color: var(--accent-strong);
+      }
+
+      .tile .label {
+        display: block;
+        margin-top: 4px;
+        font-size: 17px;
+        color: var(--ink-muted);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 19px;
+      }
+
+      th,
+      td {
+        padding: 9px 14px;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+      }
+
+      th {
+        background: var(--accent-soft);
+        font-weight: 650;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      code {
+        /* Tight horizontal padding on purpose: a wider one leaves a visible gap
+           before the punctuation that follows an inline code span. */
+        padding: 0.1rem 0.22rem;
+        border-radius: 0.3rem;
+        background: var(--code-bg);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+        font-size: 0.9em;
+      }
+
+      pre {
+        margin: 0 0 18px;
+        padding: 14px 18px;
+        border-radius: 10px;
+        background: var(--ink);
+        color: #f6efe8;
+        font-size: 17px;
+        overflow-x: auto;
+      }
+
+      pre code {
+        padding: 0;
+        background: none;
+        color: inherit;
+        font-size: inherit;
+      }
+
+      .note {
+        margin-top: auto;
+        padding: 2px 0 0 16px;
+        border-left: 3px solid var(--accent);
+        color: var(--ink-muted);
+        font-size: 19px;
+      }
+
+      .note p {
+        margin: 0;
+        font-size: inherit;
+      }
+
+      figure {
+        margin: 0;
+        text-align: center;
+      }
+
+      figure img {
+        max-width: 100%;
+        max-height: 420px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+
+      figcaption {
+        margin-top: 10px;
+        font-size: 16px;
+        color: var(--ink-muted);
+      }
+
+      /* Title slide */
+
+      .slide.title {
+        justify-content: center;
+        background: var(--accent-soft);
+      }
+
+      .slide.title .rule {
+        width: 96px;
+        height: 6px;
+        margin: 0 0 32px;
+        border-radius: 3px;
+        background: var(--accent);
+      }
+
+      /* Section dividers: a breath between two parts, and a chance to say in
+         one line what the next slides are about. */
+      .slide.section {
+        justify-content: center;
+      }
+
+      .slide.section .number {
+        margin: 0 0 14px;
+        font-size: 19px;
+        font-weight: 680;
+        letter-spacing: 0.14em;
+        color: var(--accent-strong);
+      }
+
+      .slide.section h2 {
+        font-size: 56px;
+        margin-bottom: 18px;
+      }
+
+      .slide.section .lead {
+        max-width: 42rem;
+      }
+
+      .slide.section .bar {
+        width: 100%;
+        height: 4px;
+        margin-top: 36px;
+        border-radius: 2px;
+        background: var(--border);
+      }
+
+      .slide.section .bar span {
+        display: block;
+        width: 128px;
+        height: 100%;
+        border-radius: 2px;
+        background: var(--accent);
+      }
+
+      /* The closing slide reuses the title background, where the plain accent
+         is too pale for a bullet. */
+      .slide.title li::before {
+        background: var(--accent-strong);
+      }
+
+      .takeaway {
+        max-width: 52rem;
+        margin-bottom: 40px;
+        color: var(--ink);
+      }
+
+      .slide.title .meta {
+        margin-top: 44px;
+        font-size: 19px;
+        color: var(--ink-muted);
+      }
+
+      .hint {
+        margin-top: 10px;
+        font-size: 17px;
+        color: var(--ink-muted);
+      }
+
+      /* Chrome: progress bar, footer, navigation buttons */
+
+      #chrome {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      #progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--border);
+      }
+
+      #progress span {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: var(--accent);
+        transition: width 220ms ease-out;
+      }
+
+      #footer {
+        position: absolute;
+        left: 76px;
+        right: 76px;
+        bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 15px;
+        color: var(--ink-muted);
+      }
+
+      #nav {
+        display: flex;
+        gap: 8px;
+        pointer-events: auto;
+      }
+
+      #nav button {
+        width: 30px;
+        height: 26px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--ink-muted);
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      #nav button:hover {
+        border-color: var(--accent);
+        color: var(--accent-strong);
+      }
+
+      /* Print: one slide per landscape page, so the deck can be exported to PDF
+         from the browser without a second tool. */
+      @page {
+        size: landscape;
+        margin: 0;
+      }
+
+      @media print {
+        body {
+          overflow: visible;
+        }
+
+        #deck {
+          position: static;
+          display: block;
+        }
+
+        #stage {
+          width: 100%;
+          height: auto;
+          transform: none;
+        }
+
+        .slide {
+          display: flex !important;
+          position: relative;
+          inset: auto;
+          height: 100vh;
+          animation: none;
+          break-after: page;
+        }
+
+        .slide:last-of-type {
+          break-after: auto;
+        }
+
+        #chrome {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="deck">
+      <div id="stage">
+        <section class="slide title">
+          <div class="rule"></div>
+          <h1>DataShare</h1>
+          <p class="lead">
+            Partage de fichiers par lien, avec expiration, tags et mot de passe optionnel.
+          </p>
+          <p class="meta">
+            Quentin Macé, parcours Architecte Logiciel, OpenClassrooms. Septembre et octobre 2026.
+          </p>
+          <p class="hint">
+            Flèches ou espace pour avancer, <code>f</code> pour le plein écran.
+          </p>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Le produit</p>
+          <h2>Deux parcours, les mêmes règles</h2>
+          <div class="cols">
+            <div class="card">
+              <h3>Sans compte</h3>
+              <ul>
+                <li>Dépose un fichier depuis l'accueil</li>
+                <li>Obtient un lien de téléchargement</li>
+                <li>Ni historique, ni reprise, ni suppression</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Avec un compte</h3>
+              <ul>
+                <li>Retrouve ses envois dans un historique</li>
+                <li>Organise par tags et filtre</li>
+                <li>Supprime ses fichiers avant leur terme</li>
+              </ul>
+            </div>
+          </div>
+          <p style="margin-top: 26px">
+            <strong>Règles communes aux deux</strong> : 1 Go au maximum, durée de vie de 1 à 7 jours,
+            mot de passe de partage facultatif, douze extensions refusées.
+          </p>
+          <div class="note">
+            <p>Dix user stories, de l'inscription à la purge automatique des fichiers expirés.</p>
+          </div>
+        </section>
+
+        <section class="slide section">
+          <p class="number">Partie 1</p>
+          <h2>Architecture et choix techniques</h2>
+          <p class="lead">Trois briques, un transit asymétrique, et ce qui a été écarté.</p>
+          <div class="bar"><span></span></div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Architecture</p>
+          <h2>Trois briques, et un transit asymétrique</h2>
+          <div class="cols wide-left">
+            <figure>
+              <img
+                src="../architectureDecisions/diagrams/architectureDiagram.png"
+                alt="Le front React appelle l'API Symfony, qui écrit dans le stockage objet S3 et dans PostgreSQL. Le téléchargement part en direct du stockage par une URL présignée."
+              />
+            </figure>
+            <div>
+              <ul>
+                <li>Front React, servi en statique, qui ne parle qu'à l'API</li>
+                <li>API Symfony et API Platform, seule autorité sur les droits</li>
+                <li>PostgreSQL pour les métadonnées, stockage objet S3 pour les octets</li>
+                <li>Tout tourne dans Docker, y compris le serveur de développement du front</li>
+              </ul>
+            </div>
+          </div>
+          <div class="note">
+            <p>
+              La flèche de gauche est la décision qui structure tout le reste : le fichier
+              téléchargé ne traverse jamais l'application.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Choix techniques</p>
+          <h2>Où vivent les octets, et par où ils transitent</h2>
+          <div class="cols">
+            <div class="card">
+              <h3>Upload par l'API</h3>
+              <p>
+                La transaction "objet écrit, métadonnées enregistrées" reste atomique. Une URL
+                présignée en écriture aurait créé le cas "dépôt réussi, confirmation perdue", donc
+                des objets orphelins à réconcilier.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Téléchargement par URL présignée</h3>
+              <p>
+                L'API vérifie l'expiration et le mot de passe, puis signe une URL valable 60
+                secondes. Le contrôle d'accès reste côté serveur, et PHP ne streame jamais 1 Go en
+                sortie.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Choix techniques</p>
+          <h2>La stack, et ce qui a été écarté</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Brique</th>
+                <th>Choix</th>
+                <th>Alternative écartée</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Back</td>
+                <td>Symfony 8 et API Platform</td>
+                <td>NestJS, meilleur sur le 1 Go, coût d'apprentissage non finançable</td>
+              </tr>
+              <tr>
+                <td>Front</td>
+                <td>React 19, Vite, TypeScript</td>
+                <td>Angular, plus de garde-fous, plus lent à démarrer</td>
+              </tr>
+              <tr>
+                <td>Base</td>
+                <td>PostgreSQL 16</td>
+                <td>MongoDB, défendable, sans bénéfice sur un modèle relationnel</td>
+              </tr>
+              <tr>
+                <td>Stockage</td>
+                <td>API S3, via Flysystem</td>
+                <td>AWS S3 réel, carte bancaire exigée, scripts de déploiement cassés</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="slide section">
+          <p class="number">Partie 2</p>
+          <h2>Difficultés rencontrées</h2>
+          <p class="lead">Deux pannes, leur diagnostic et leur correction.</p>
+          <div class="bar"><span></span></div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Difficulté</p>
+          <h2>Le stockage disparaît des registres</h2>
+          <p>
+            L'intégration continue casse un matin, sur une branche qui ne touchait pas à
+            l'infrastructure.
+          </p>
+          <pre><code>minio Error unauthorized: access to the requested resource is not authorized</code></pre>
+          <div class="cols">
+            <div class="card">
+              <h3>Le diagnostic</h3>
+              <p>
+                401 sur Quay et Docker Hub, 403 sur GHCR, avec des témoins de contrôle à 200 sur les
+                trois. Ni quota, ni tag erroné : les dépôts sont fermés. L'édition communautaire de
+                MinIO a été abandonnée par son éditeur.
+              </p>
+            </div>
+            <div class="card">
+              <h3>La solution</h3>
+              <p>
+                SeaweedFS, retenu sur essai et non sur documentation : créer un bucket, envoyer un
+                objet, signer une URL, appeler cette URL. Le seul des quatre candidats à avoir servi
+                les quatre étapes.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Difficulté</p>
+          <h2>Le gigaoctet n'avait pas la même taille des deux côtés</h2>
+          <div class="tiles">
+            <div class="tile">
+              <span class="figure">1024³</span>
+              <span class="label">ce que comptait le front</span>
+            </div>
+            <div class="tile">
+              <span class="figure">1000³</span>
+              <span class="label">ce que comptait l'API</span>
+            </div>
+            <div class="tile">
+              <span class="figure">73 Mo</span>
+              <span class="label">d'écart, donc d'envois acceptés puis refusés</span>
+            </div>
+          </div>
+          <p>
+            L'utilisateur voyait sa sélection validée par le formulaire, attendait une minute, et
+            récoltait un refus. Aucun test ne pouvait le voir : chacun des deux côtés était
+            cohérent avec lui-même.
+          </p>
+          <div class="note">
+            <p>
+              Leçon tirée et écrite : une constante dupliquée des deux côtés finit par diverger.
+              C'est la campagne de performance qui l'a trouvée, pas les tests.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide section">
+          <p class="number">Partie 3</p>
+          <h2>Suivi qualité</h2>
+          <p class="lead">Tests, sécurité, performance.</p>
+          <div class="bar"><span></span></div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Qualité</p>
+          <h2>Trois niveaux de tests, trois questions différentes</h2>
+          <div class="tiles">
+            <div class="tile">
+              <span class="figure">197</span>
+              <span class="label">tests back, 90,56 % des lignes</span>
+            </div>
+            <div class="tile">
+              <span class="figure">294</span>
+              <span class="label">tests front, 99,27 % des lignes</span>
+            </div>
+            <div class="tile">
+              <span class="figure">7</span>
+              <span class="label">scénarios de bout en bout</span>
+            </div>
+          </div>
+          <ul>
+            <li><strong>Unitaire</strong> : qui a le droit, quoi hacher, quoi refuser.</li>
+            <li>
+              <strong>Fonctionnel</strong> : une vraie requête HTTP sur le noyau, donc le routeur, le
+              pare-feu, le sérialiseur et le validateur.
+            </li>
+            <li>
+              <strong>Bout en bout</strong> : un navigateur sur la stack complète, et la seule
+              question que les deux autres ne posent jamais, est-ce que ça marche vraiment.
+            </li>
+          </ul>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Qualité</p>
+          <h2>Les mesures, et les limites assumées</h2>
+          <div class="cols">
+            <div class="card">
+              <h3>Les mesures</h3>
+              <ul>
+                <li>JWT signé RSA, sans session serveur, valable une heure</li>
+                <li>Sécurité posée opération par opération, certaines routes étant publiques par conception</li>
+                <li>401 et 410 indifférenciés, pour n'apprendre rien à qui tâtonne</li>
+                <li>16 caractères pour un compte, 6 pour un lien, et cinq essais par quart d'heure pour compenser</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Les audits</h3>
+              <ul>
+                <li>
+                  <code>composer audit</code> : deux avis Symfony, corrigés dans la revue, dont une
+                  ReDoS atteignable par n'importe quel client
+                </li>
+                <li><code>npm audit</code> : aucune vulnérabilité, front et e2e</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Qualité</p>
+          <h2>La mesure a contredit la lecture naïve</h2>
+          <div class="tiles">
+            <div class="tile">
+              <span class="figure">63 s</span>
+              <span class="label">pour 1 Go, aucune limite serveur atteinte</span>
+            </div>
+            <div class="tile">
+              <span class="figure">237,7 Kio</span>
+              <span class="label">transférés sur l'accueil, budget de 300</span>
+            </div>
+            <div class="tile">
+              <span class="figure">96 %</span>
+              <span class="label">du budget consommé par le seul poste script</span>
+            </div>
+          </div>
+          <p>
+            Le débit d'écriture chutait d'un facteur six entre 100 et 500 Mo, puis remontait à 1 Go.
+            Incohérent, si on lit la taille. Mais la taille n'est pas la seule variable qui change
+            d'un palier à l'autre : <strong>c'est la concurrence</strong>. À 500 Mo, un envoi seul
+            écrit à 159,9 Mio/s, deux envois simultanés à 18 Mio/s agrégés.
+          </p>
+          <div class="note">
+            <p>
+              Un fichier envoyé est écrit trois fois sur le même disque avant d'exister : par le
+              serveur web, par PHP, puis par le stockage. À deux gros envois en même temps, c'est le
+              disque qui sature. Le tout sur un poste de travail ordinaire, occupé à autre chose
+              pendant la mesure : les paliers se comparent entre eux, ils ne disent rien d'une
+              capacité de production.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide section">
+          <p class="number">Partie 4</p>
+          <h2>L'IA, et la suite</h2>
+          <p class="lead">Ce qui lui a été confié, et ce qui reste à faire.</p>
+          <div class="bar"><span></span></div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">L'IA dans le projet</p>
+          <h2>Trois rôles distincts, un seul décideur</h2>
+          <div class="cols">
+            <div class="card">
+              <h3>Ce qui a été confié</h3>
+              <ul>
+                <li>Contradicteur sur le socle technique et les décisions d'architecture</li>
+                <li>Développeur junior à qui l'on assigne des tickets, un par un</li>
+                <li>Relecteur, à la recherche des failles et des manques de la documentation</li>
+              </ul>
+            </div>
+            <div class="card accent">
+              <h3>La règle sans exception</h3>
+              <p>
+                L'IA créait la branche et la demande de fusion. Elle n'a <strong>jamais</strong> été
+                autorisée à fusionner. Chaque fusion est humaine, après relecture ligne à ligne, test
+                manuel et intégration continue au vert.
+              </p>
+            </div>
+          </div>
+          <div class="note">
+            <p>
+              Limites reconnues : un apprentissage moins profond qu'en écrivant soi-même, et une
+              quantité de code produite qui crée une surcharge cognitive.
+            </p>
+          </div>
+        </section>
+
+        <section class="slide">
+          <p class="kicker">Suites</p>
+          <h2>Ce qui est identifié, chiffré et prêt à être repris</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Sujet</th>
+                <th>Ce que ça apporte</th>
+                <th>Ce que ça coûte</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Upload par URL présignée</td>
+                <td>deux copies d'octets sur trois supprimées</td>
+                <td>la transaction cesse d'être atomique, réconciliation à écrire</td>
+              </tr>
+              <tr>
+                <td>Limite de débit sur l'upload anonyme</td>
+                <td>le stockage n'est plus remplissable librement</td>
+                <td>le limiteur est déjà en place pour le téléchargement</td>
+              </tr>
+              <tr>
+                <td>Contraste des jetons orangés</td>
+                <td>le niveau WCAG AA sur deux éléments de formulaire</td>
+                <td>deux valeurs de couleur</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="slide title">
+          <p class="kicker">Merci</p>
+          <p class="lead takeaway">
+            Merci de votre attention, et du temps que vous avez accordé à m'écouter.
+          </p>
+          <div class="rule"></div>
+          <h1>Des questions ?</h1>
+        </section>
+
+        <div id="chrome">
+          <div id="progress"><span></span></div>
+          <div id="footer">
+            <div id="nav">
+              <button type="button" data-step="-1" aria-label="Slide précédente">&#8592;</button>
+              <button type="button" data-step="1" aria-label="Slide suivante">&#8594;</button>
+            </div>
+            <span id="counter"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const stage = document.getElementById('stage')
+      const slides = Array.from(document.querySelectorAll('.slide'))
+      const counter = document.getElementById('counter')
+      const bar = document.querySelector('#progress span')
+
+      let index = 0
+
+      // The stage keeps its 1280 by 720 pixels whatever the screen; only the
+      // scale factor changes, so nothing ever reflows between two displays.
+      function fit() {
+        const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720)
+        stage.style.setProperty('--scale', scale)
+      }
+
+      function show(next) {
+        index = Math.max(0, Math.min(slides.length - 1, next))
+        slides.forEach((slide, position) => slide.classList.toggle('is-active', position === index))
+        counter.textContent = index + 1 + ' / ' + slides.length
+        bar.style.width = ((index + 1) / slides.length) * 100 + '%'
+        // replaceState rather than assigning location.hash: the slide number
+        // survives a reload without filling the browser history.
+        history.replaceState(null, '', '#' + (index + 1))
+      }
+
+      function fromHash() {
+        const asked = parseInt(window.location.hash.slice(1), 10)
+        return Number.isNaN(asked) ? 0 : asked - 1
+      }
+
+      document.addEventListener('keydown', (event) => {
+        const keys = [
+          'ArrowRight',
+          'ArrowLeft',
+          'ArrowUp',
+          'ArrowDown',
+          ' ',
+          'PageDown',
+          'PageUp',
+          'Home',
+          'End',
+        ]
+
+        if (keys.includes(event.key)) {
+          event.preventDefault()
+        }
+
+        switch (event.key) {
+          case 'ArrowRight':
+          case 'ArrowDown':
+          case 'PageDown':
+          case ' ':
+            show(index + 1)
+            break
+          case 'ArrowLeft':
+          case 'ArrowUp':
+          case 'PageUp':
+            show(index - 1)
+            break
+          case 'Home':
+            show(0)
+            break
+          case 'End':
+            show(slides.length - 1)
+            break
+          case 'f':
+          case 'F':
+            if (document.fullscreenElement) {
+              document.exitFullscreen()
+            } else {
+              document.documentElement.requestFullscreen()
+            }
+            break
+        }
+      })
+
+      document.querySelectorAll('#nav button').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.stopPropagation()
+          show(index + Number(button.dataset.step))
+        })
+      })
+
+      // Clicking anywhere advances, which is what a remote control sends. Links
+      // keep their own behaviour.
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('a')) {
+          show(index + 1)
+        }
+      })
+
+      window.addEventListener('resize', fit)
+
+      fit()
+      show(fromHash())
+    </script>
+  </body>
+</html>
