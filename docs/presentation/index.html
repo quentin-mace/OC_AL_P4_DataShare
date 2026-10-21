@@ -331,19 +331,55 @@
         background: var(--accent);
       }
 
+      /* Section dividers: a breath between two parts, and a chance to say in
+         one line what the next slides are about. */
+      .slide.section {
+        justify-content: center;
+      }
+
+      .slide.section .number {
+        margin: 0 0 14px;
+        font-size: 19px;
+        font-weight: 680;
+        letter-spacing: 0.14em;
+        color: var(--accent-strong);
+      }
+
+      .slide.section h2 {
+        font-size: 56px;
+        margin-bottom: 18px;
+      }
+
+      .slide.section .lead {
+        max-width: 42rem;
+      }
+
+      .slide.section .bar {
+        width: 100%;
+        height: 4px;
+        margin-top: 36px;
+        border-radius: 2px;
+        background: var(--border);
+      }
+
+      .slide.section .bar span {
+        display: block;
+        width: 128px;
+        height: 100%;
+        border-radius: 2px;
+        background: var(--accent);
+      }
+
       /* The closing slide reuses the title background, where the plain accent
          is too pale for a bullet. */
       .slide.title li::before {
         background: var(--accent-strong);
       }
 
-      .takeaways {
-        margin-bottom: 36px;
-        font-size: 23px;
-      }
-
-      .takeaways li {
-        font-size: inherit;
+      .takeaway {
+        max-width: 52rem;
+        margin-bottom: 40px;
+        color: var(--ink);
       }
 
       .slide.title .meta {
@@ -507,6 +543,13 @@
           </div>
         </section>
 
+        <section class="slide section">
+          <p class="number">Partie 1</p>
+          <h2>Architecture et choix techniques</h2>
+          <p class="lead">Trois briques, un transit asymétrique, et ce qui a été écarté.</p>
+          <div class="bar"><span></span></div>
+        </section>
+
         <section class="slide">
           <p class="kicker">Architecture</p>
           <h2>Trois briques, et un transit asymétrique</h2>
@@ -555,24 +598,11 @@
               </p>
             </div>
           </div>
-          <div class="note">
-            <p>
-              Effet de bord utile : l'upload devient le seul endroit du service où la taille des
-              fichiers pèse sur le code, donc le seul qui méritait un test de charge.
-            </p>
-          </div>
         </section>
 
         <section class="slide">
           <p class="kicker">Choix techniques</p>
-          <h2>Le critère d'arbitrage, posé une fois</h2>
-          <div class="card accent" style="margin-bottom: 24px">
-            <p style="margin: 0">
-              Le critère retenu est <strong>la maîtrise préalable du stack</strong>, pas l'intérêt
-              technique des options. La moitié de la charge du projet est de la documentation, du
-              suivi qualité et des tests : tout temps d'apprentissage y est pris.
-            </p>
-          </div>
+          <h2>La stack, et ce qui a été écarté</h2>
           <table>
             <thead>
               <tr>
@@ -604,12 +634,13 @@
               </tr>
             </tbody>
           </table>
-          <div class="note">
-            <p>
-              Le stockage est choisi comme une interface, pas comme un produit. La slide suivante
-              montre ce que cette nuance a sauvé.
-            </p>
-          </div>
+        </section>
+
+        <section class="slide section">
+          <p class="number">Partie 2</p>
+          <h2>Difficultés rencontrées</h2>
+          <p class="lead">Deux pannes, leur diagnostic et leur correction.</p>
+          <div class="bar"><span></span></div>
         </section>
 
         <section class="slide">
@@ -637,13 +668,6 @@
                 les quatre étapes.
               </p>
             </div>
-          </div>
-          <div class="note">
-            <p>
-              <strong>Zéro ligne de code applicatif modifiée.</strong> Le <code>compose.yaml</code>
-              et deux variables d'environnement. C'est la promesse du choix de stockage, mise à
-              l'épreuve pour de vrai.
-            </p>
           </div>
         </section>
 
@@ -677,6 +701,13 @@
           </div>
         </section>
 
+        <section class="slide section">
+          <p class="number">Partie 3</p>
+          <h2>Suivi qualité</h2>
+          <p class="lead">Tests, sécurité, performance.</p>
+          <div class="bar"><span></span></div>
+        </section>
+
         <section class="slide">
           <p class="kicker">Qualité</p>
           <h2>Trois niveaux de tests, trois questions différentes</h2>
@@ -705,12 +736,6 @@
               question que les deux autres ne posent jamais, est-ce que ça marche vraiment.
             </li>
           </ul>
-          <div class="note">
-            <p>
-              Trois workflows rejouent tout sur chaque pull request. Limite assumée : le seuil de
-              70 % est bloquant côté front, mesuré mais pas vérifié côté back.
-            </p>
-          </div>
         </section>
 
         <section class="slide">
@@ -734,15 +759,8 @@
                   ReDoS atteignable par n'importe quel client
                 </li>
                 <li><code>npm audit</code> : aucune vulnérabilité, front et e2e</li>
-                <li>Trivy sur les huit images de la stack, analysées une par une</li>
               </ul>
             </div>
-          </div>
-          <div class="note">
-            <p>
-              Première limite à corriger, et elle est écrite noir sur blanc : l'upload anonyme n'est
-              plafonné par rien.
-            </p>
           </div>
         </section>
 
@@ -771,10 +789,20 @@
           </p>
           <div class="note">
             <p>
-              L'explication tient au chemin d'un octet : il est écrit trois fois sur le même disque,
-              tampon de nginx, fichier temporaire de PHP, puis stockage objet.
+              Un fichier envoyé est écrit trois fois sur le même disque avant d'exister : par le
+              serveur web, par PHP, puis par le stockage. À deux gros envois en même temps, c'est le
+              disque qui sature. Le tout sur un poste de travail ordinaire, occupé à autre chose
+              pendant la mesure : les paliers se comparent entre eux, ils ne disent rien d'une
+              capacité de production.
             </p>
           </div>
+        </section>
+
+        <section class="slide section">
+          <p class="number">Partie 4</p>
+          <h2>L'IA, et la suite</h2>
+          <p class="lead">Ce qui lui a été confié, et ce qui reste à faire.</p>
+          <div class="bar"><span></span></div>
         </section>
 
         <section class="slide">
@@ -835,21 +863,14 @@
               </tr>
             </tbody>
           </table>
-          <div class="note">
-            <p>
-              Rien de ce qui est annoncé ici n'est de mémoire : tout est tracé dans le dépôt, dans
-              les décisions d'architecture et dans les quatre documents de suivi.
-            </p>
-          </div>
         </section>
 
         <section class="slide title">
           <p class="kicker">Conclusion</p>
-          <ul class="takeaways">
-            <li>Un service qui protège ses fichiers, et dont les limites sont écrites plutôt que tues</li>
-            <li>Des décisions tracées une par une, avec les alternatives écartées et leur raison</li>
-            <li>Une mesure qui a trouvé ce qu'aucun test ne pouvait voir</li>
-          </ul>
+          <p class="lead takeaway">
+            Le service fait ce qu'on lui demande, et je sais précisément où il s'arrête : c'est ce
+            que je retiens de ce projet.
+          </p>
           <div class="rule"></div>
           <h1>Des questions ?</h1>
         </section>
