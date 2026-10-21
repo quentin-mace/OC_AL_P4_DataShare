@@ -41,3 +41,19 @@ Rappeler les conventions du dépôt :
   Exemple : `feat(front): add the login form (#35)`.
 - Front : `make lint`, `make test`, `make coverage` (seuil 70 %) ; nouveau composant UI = test à côté + entrée dans `docs/ui_guide.md`.
 - Une PR vers `main` qui référence le ticket.
+
+## 7. Ouvrir la PR
+- Corps en français, mais **le mot-clé de fermeture doit être en anglais** : commencer par
+  `Closes #N.` (ou `Fixes`, `Resolves`). GitHub ne reconnaît aucun mot-clé français.
+  **`Ferme #N` ne ferme rien**, ça ne crée qu'une mention, et le ticket reste ouvert après
+  la fusion. Plusieurs tickets = répéter le mot-clé : `Closes #19, closes #20.`
+- Vérifier le lien après coup, c'est la seule preuve que ça a marché :
+  ```bash
+  gh api graphql -f query='query{repository(owner:"quentin-mace",name:"OC_AL_P4_DataShare"){pullRequest(number:<PR>){closingIssuesReferences(first:5){nodes{number title}}}}}'
+  ```
+  Une liste vide veut dire que la PR n'est reliée à rien, quel que soit ce que le corps raconte.
+- `gh pr edit` échoue sur la même erreur "Projects (classic)" que `gh issue view`. Pour
+  corriger un corps de PR, passer par l'API REST :
+  ```bash
+  gh api -X PATCH repos/quentin-mace/OC_AL_P4_DataShare/pulls/<PR> -F body=@corps.md
+  ```
