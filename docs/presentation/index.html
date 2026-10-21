@@ -331,6 +331,21 @@
         background: var(--accent);
       }
 
+      /* The closing slide reuses the title background, where the plain accent
+         is too pale for a bullet. */
+      .slide.title li::before {
+        background: var(--accent-strong);
+      }
+
+      .takeaways {
+        margin-bottom: 36px;
+        font-size: 23px;
+      }
+
+      .takeaways li {
+        font-size: inherit;
+      }
+
       .slide.title .meta {
         margin-top: 44px;
         font-size: 19px;
@@ -826,6 +841,17 @@
               les décisions d'architecture et dans les quatre documents de suivi.
             </p>
           </div>
+        </section>
+
+        <section class="slide title">
+          <p class="kicker">Conclusion</p>
+          <ul class="takeaways">
+            <li>Un service qui protège ses fichiers, et dont les limites sont écrites plutôt que tues</li>
+            <li>Des décisions tracées une par une, avec les alternatives écartées et leur raison</li>
+            <li>Une mesure qui a trouvé ce qu'aucun test ne pouvait voir</li>
+          </ul>
+          <div class="rule"></div>
+          <h1>Des questions ?</h1>
         </section>
 
         <div id="chrome">
