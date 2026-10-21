@@ -11,6 +11,13 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 final class FileUploadInput
 {
+    /**
+     * File::$name is a varchar(255), and the name comes straight from the
+     * client. Without this check PostgreSQL rejects the insert and the client
+     * gets a 500 where every other limit of this resource answers 422.
+     */
+    public const int MAX_FILE_NAME_LENGTH = 255;
+
     #[Assert\NotNull(message: 'A file is required.')]
     #[Assert\File(maxSize: '1G')]
     #[ForbiddenExtension]
@@ -51,6 +58,25 @@ final class FileUploadInput
     // and filters its history, neither of which an anonymous upload has.
     #[AuthenticatedOnly(message: 'Tags are reserved for signed-in accounts.')]
     public array $tags = [];
+
+    /**
+     * Counted in characters rather than bytes, since the column stores
+     * characters: an accented name is not worth less of a name.
+     */
+    #[Assert\Callback]
+    public function validateFileName(ExecutionContextInterface $context): void
+    {
+        if (!$this->file instanceof UploadedFile) {
+            return;
+        }
+
+        if (mb_strlen($this->file->getClientOriginalName()) > self::MAX_FILE_NAME_LENGTH) {
+            $context->buildViolation('The file name cannot be longer than {{ limit }} characters.')
+                ->setParameter('{{ limit }}', (string) self::MAX_FILE_NAME_LENGTH)
+                ->atPath('file')
+                ->addViolation();
+        }
+    }
 
     #[Assert\Callback]
     public function validateTags(ExecutionContextInterface $context): void

@@ -223,6 +223,38 @@ final class FileUploadTest extends WebTestCase
         self::assertSame(['file'], $this->violatedFields());
     }
 
+    /**
+     * File::$name is a varchar(255) filled from the client, so an oversized
+     * name used to reach PostgreSQL and come back as a 500, where every other
+     * limit of this resource answers 422.
+     */
+    public function testItRejectsAFileNameLongerThanTheColumn(): void
+    {
+        $this->upload(
+            $this->token($this->owner),
+            file: new UploadedFile($this->smallFilePath(), str_repeat('a', 256).'.txt', 'text/plain', test: true),
+        );
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame(['file'], $this->violatedFields());
+    }
+
+    /**
+     * Same column length, but on a header the client fully controls and that
+     * only picks an icon: the upload goes through and the type falls back
+     * rather than being refused over something cosmetic.
+     */
+    public function testItFallsBackOnAnOversizedMimeType(): void
+    {
+        $this->upload(
+            $this->token($this->owner),
+            file: new UploadedFile($this->smallFilePath(), 'note.txt', 'text/'.str_repeat('x', 300), test: true),
+        );
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('application/octet-stream', $this->decodeResponse()['mimeType']);
+    }
+
     public function testItRejectsAnExpirationOfMoreThanSevenDays(): void
     {
         $this->upload($this->token($this->owner), ['expiresInDays' => '8']);

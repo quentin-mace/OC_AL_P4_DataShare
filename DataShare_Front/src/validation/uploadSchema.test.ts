@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   fileExtension,
+  MAX_FILE_NAME_LENGTH,
   MAX_FILE_SIZE,
   parseTags,
   uploadSchema,
@@ -58,6 +59,19 @@ describe('uploadSchema', () => {
   // avec Assert\File(maxSize: '1G'), dont les suffixes sont décimaux.
   it('counts 1 GB the way the back-end does, in powers of 1000', () => {
     expect(MAX_FILE_SIZE).toBe(1_000_000_000)
+  })
+
+  // File::$name est une colonne varchar(255) côté back. Sans cette règle,
+  // l'envoi partait et ne revenait qu'en erreur, comme la taille avant le #79.
+  it('accepts a name of exactly 255 characters but not one more', () => {
+    expect(messagesFor({ file: new File(['x'], 'a'.repeat(255)) })).toEqual([])
+    expect(messagesFor({ file: new File(['x'], 'a'.repeat(256)) })).toEqual([
+      ['file', 'Le nom du fichier ne peut pas dépasser 255 caractères.'],
+    ])
+  })
+
+  it('counts the name limit the way the back-end column does', () => {
+    expect(MAX_FILE_NAME_LENGTH).toBe(255)
   })
 
   it.each(['setup.exe', 'SCRIPT.JS', 'archive.tar.sh'])('rejects the forbidden file %s', (name) => {
