@@ -25,10 +25,16 @@ Le front installe ses dépendances npm à son premier démarrage, comptez une mi
 | Application | http://localhost:5173 |
 | API, documentation interactive comprise | http://localhost:8080/api |
 | Base de données (Adminer) | http://localhost:8081 |
-| Stockage S3 | http://localhost:8333 |
+| Stockage S3, l'API | http://localhost:8333 |
+| Stockage S3, le contenu du bucket | http://localhost:8888/buckets/datashare/ |
 
 Pour Adminer : système PostgreSQL, serveur `database` (pré-rempli), puis utilisateur, mot de passe et base
 depuis `DataShare_API/.env`, soit `app` / `!ChangeMe!` / `app` par défaut.
+
+Le port 8333 est l'API S3, celle que l'application appelle : ouvert dans un navigateur, il ne montre rien
+d'utile. Pour voir les fichiers envoyés, c'est le port 8888, l'interface du filer de SeaweedFS. Elle liste,
+télécharge et supprime, rien de plus. Les deux ports n'écoutent que sur votre machine, le stockage ne
+demandant aucun mot de passe en local.
 
 Ensuite, `docker compose up -d` et `docker compose down` depuis la racine suffisent au quotidien.
 
