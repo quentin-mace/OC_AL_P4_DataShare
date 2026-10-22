@@ -454,15 +454,26 @@
         color: var(--accent-strong);
       }
 
-      /* Print: one slide per landscape page, so the deck can be exported to PDF
-         from the browser without a second tool. */
+      /* Print: one slide per page, so the deck can be exported to PDF from the
+         browser without a second tool.
+
+         The page is the stage itself, 1280 by 720 pixels, rather than a paper
+         format: a slide composed in 16:9 keeps its proportions, where
+         "landscape" alone gave a letter page and squeezed every slide.
+
+         In points, not inches: 960pt is exactly 1280px, where 13.333in falls
+         0.03px short and leaves the stage overflowing the page by that
+         nothing. */
       @page {
-        size: landscape;
+        size: 960pt 540pt;
         margin: 0;
       }
 
       @media print {
+        html,
         body {
+          width: 1280px;
+          height: auto;
           overflow: visible;
         }
 
@@ -472,22 +483,35 @@
         }
 
         #stage {
-          width: 100%;
+          width: 1280px;
           height: auto;
           transform: none;
         }
 
-        .slide {
+        /* ".slide.is-active" is also listed, and not only ".slide": the rule
+           that carries the fade is the two-class one, so it outweighs a single
+           class even here. Left alone, the slide the deck was showing printed
+           at the opacity the animation starts from, which is zero, and came
+           out as a blank page about one export in three. */
+        .slide,
+        .slide.is-active {
           display: flex !important;
           position: relative;
           inset: auto;
-          height: 100vh;
+          width: 1280px;
+          height: 720px;
+          overflow: hidden;
           animation: none;
           break-after: page;
         }
 
         .slide:last-of-type {
           break-after: auto;
+        }
+
+        /* The keyboard help addresses someone sitting in front of the deck. */
+        .slide.title .hint {
+          display: none;
         }
 
         #chrome {

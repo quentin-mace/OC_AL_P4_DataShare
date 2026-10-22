@@ -1,4 +1,4 @@
-.PHONY: up down audit audit-images html
+.PHONY: up down audit audit-images html slides
 
 # Point d'entree de la stack complete. Les cibles de developpement vivent dans
 # les Makefile de chaque projet (DataShare_API, DataShare_Front, e2e, perf) ;
@@ -39,3 +39,16 @@ audit-images: ## Scanne les images Docker avec Trivy (conteneurise, rien a insta
 
 html: ## Regenere docs/html/index.html depuis README.md (sur le poste, Node 20+)
 	node docs/html/build.mjs
+
+# L'image de Cypress est reutilisee pour son Chrome, comme le fait deja
+# Lighthouse dans perf/ : elle est epinglee et scannee par audit-images, une
+# image dediee ajouterait une brique a surveiller pour le meme resultat.
+# L'utilisateur du poste plutot que root, sinon le PDF sort en lecture seule.
+slides: ## Regenere le PDF du support de soutenance depuis docs/presentation/index.html
+	docker run --rm \
+		-u "$$(id -u):$$(id -g)" -e HOME=/tmp \
+		-v "$$(pwd)/docs/presentation":/deck \
+		--entrypoint google-chrome cypress/included:16.1.1 \
+		--headless --no-sandbox --disable-gpu --hide-scrollbars \
+		--window-size=1280,720 --no-pdf-header-footer --virtual-time-budget=8000 \
+		--print-to-pdf=/deck/DataShare-soutenance.pdf file:///deck/index.html

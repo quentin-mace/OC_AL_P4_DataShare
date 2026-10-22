@@ -46,6 +46,7 @@ Chaque projet a son `Makefile`, où la liste complète des cibles est commentée
 |---|---|---|
 | racine | `docker compose up -d` / `down` | démarre ou arrête toute la stack |
 | racine | `make audit` | cherche les vulnérabilités des dépendances |
+| racine | `make slides` | régénère le PDF du support de soutenance |
 | `DataShare_API` | `make test` | lance les tests PHPUnit |
 | `DataShare_API` | `make coverage` | les tests avec le rapport de couverture |
 | `DataShare_API` | `make lint` | CS-Fixer et PHPStan, sans rien modifier |
@@ -97,5 +98,6 @@ Ce qui vous est propre va dans un fichier `.env.local` à côté, jamais commit�
 | [Contrat d'API](docs/specs/API/contrat-api.md) | les routes, les champs et les codes d'erreur |
 | [Décisions d'architecture](docs/architectureDecisions/) | pourquoi le projet est fait comme ça |
 | [Support de soutenance](docs/presentation/index.html) | le projet en dix-sept slides, à ouvrir dans un navigateur |
+| [Le même en PDF](docs/presentation/DataShare-soutenance.pdf) | la version à projeter ou à transmettre, régénérée par `make slides` |
 
 Ce README existe aussi en [version HTML](docs/html/index.html), plus agréable à lire hors de GitHub.
