@@ -14,9 +14,15 @@ services:
     ports:
       - "8080:80"
 
-  # L'API S3 seule, et sur la boucle locale uniquement : la passerelle S3
-  # sert ici sans verifier les identifiants (voir tech_stack.md), le bucket
-  # n'a donc rien a faire sur les autres interfaces du poste.
+  # L'API S3 et l'interface du filer, sur la boucle locale uniquement : la
+  # passerelle S3 sert ici sans verifier les identifiants (voir tech_stack.md)
+  # et le filer n'en demande pas non plus, le bucket n'a donc rien a faire sur
+  # les autres interfaces du poste.
+  #
+  # Le filer liste et telecharge le contenu du bucket depuis un navigateur,
+  # sur http://localhost:8888/buckets/datashare/. Les autres ports de l'image
+  # (master, volume) restent fermes : l'AWS CLI suffit au reste.
   storage:
     ports:
       - "127.0.0.1:8333:8333"
+      - "127.0.0.1:8888:8888"

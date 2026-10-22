@@ -195,12 +195,20 @@ docker compose up -d   # demarre l&#39;API et le front ensemble
 <td><a href="http://localhost:8081">http://localhost:8081</a></td>
 </tr>
 <tr>
-<td>Stockage S3</td>
+<td>Stockage S3, l&#39;API</td>
 <td><a href="http://localhost:8333">http://localhost:8333</a></td>
+</tr>
+<tr>
+<td>Stockage S3, le contenu du bucket</td>
+<td><a href="http://localhost:8888/buckets/datashare/">http://localhost:8888/buckets/datashare/</a></td>
 </tr>
 </tbody></table>
 <p>Pour Adminer : système PostgreSQL, serveur <code>database</code> (pré-rempli), puis utilisateur, mot de passe et base
 depuis <code>DataShare_API/.env</code>, soit <code>app</code> / <code>!ChangeMe!</code> / <code>app</code> par défaut.</p>
+<p>Le port 8333 est l&#39;API S3, celle que l&#39;application appelle : ouvert dans un navigateur, il ne montre rien
+d&#39;utile. Pour voir les fichiers envoyés, c&#39;est le port 8888, l&#39;interface du filer de SeaweedFS. Elle liste,
+télécharge et supprime, rien de plus. Les deux ports n&#39;écoutent que sur votre machine, le stockage ne
+demandant aucun mot de passe en local.</p>
 <p>Ensuite, <code>docker compose up -d</code> et <code>docker compose down</code> depuis la racine suffisent au quotidien.</p>
 <h2>Les commandes utiles</h2>
 <p>Chaque projet a son <code>Makefile</code>, où la liste complète des cibles est commentée.</p>
@@ -367,6 +375,10 @@ l&#39;hôte.</li>
 <tr>
 <td><a href="../architectureDecisions/">Décisions d&#39;architecture</a></td>
 <td>pourquoi le projet est fait comme ça</td>
+</tr>
+<tr>
+<td><a href="../presentation/index.html">Support de soutenance</a></td>
+<td>le projet en dix-sept slides, à ouvrir dans un navigateur</td>
 </tr>
 </tbody></table>
 <p>Ce README existe aussi en <a href="index.html">version HTML</a>, plus agréable à lire hors de GitHub.</p></main>

@@ -206,7 +206,16 @@ obsolète : `docker compose exec php bin/console cache:clear`.
 celui de l'hôte. Un `npm install` lancé sur le poste ne sert qu'à l'IDE ; c'est `make install` qui peuple le
 volume.
 
-**Le stockage S3 est inspectable à l'AWS CLI**, SeaweedFS n'ayant pas de console web, contrairement à MinIO.
+**Le stockage S3 s'inspecte à l'AWS CLI**, dans un conteneur jetable qui a déjà les identifiants :
+
+```bash
+docker compose run --rm --no-deps --entrypoint sh storage-init \
+  -c "aws --endpoint-url http://storage:8333 s3 ls s3://datashare --recursive --summarize"
+```
+
+SeaweedFS n'offre pas de console comparable à celle de MinIO. Son filer, sur
+[localhost:8888](http://localhost:8888/buckets/datashare/), donne tout de même une page web qui liste,
+télécharge et supprime.
 
 ## Voir aussi
 
